@@ -51,7 +51,7 @@ end
 end
 
 
-function solve(solver::LocalApproxValueIterationSolver, mdp::Union{MDP,POMDP}, interp::LocalValueFnApproximator; verbose::Bool=false)
+function solve(solver::LocalApproxValueIterationSolver, mdp::Union{MDP,POMDP})
 
     @warn_requirements solve(solver,mdp)
 
@@ -61,7 +61,7 @@ function solve(solver::LocalApproxValueIterationSolver, mdp::Union{MDP,POMDP}, i
     discount_factor = discount(mdp)
 
     # Initialize the policy
-    policy = create_policy(solver,mdp,interp)
+    policy = LocalApproxValueIterationPolicy(mdp,solver)
 
     total_time::Float64 = 0.0
     iter_time::Float64 = 0.0
@@ -76,8 +76,6 @@ function solve(solver::LocalApproxValueIterationSolver, mdp::Union{MDP,POMDP}, i
         residual::Float64 = 0.0
         tic()
 
-        # TODO : Is this how to correctly handle terminal states and convergence?
-        # Since we are no longer iterating over all states
         for (istate,s) in enumerate(interp_states)
 
             # TODO : Assume that interpolator's state values can be directly
@@ -115,7 +113,7 @@ function solve(solver::LocalApproxValueIterationSolver, mdp::Union{MDP,POMDP}, i
 
         iter_time = toq()
         total_time += iter_time
-        verbose ? @printf("[Iteration %-4d] residual: %10.3G | iteration runtime: %10.3f ms, (%10.3G s total)\n", i, residual, iter_time*1000.0, total_time) : nothing
+        solver.verbose ? @printf("[Iteration %-4d] residual: %10.3G | iteration runtime: %10.3f ms, (%10.3G s total)\n", i, residual, iter_time*1000.0, total_time) : nothing
         residual < belres ? break : nothing
 
     end #main
