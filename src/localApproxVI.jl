@@ -69,7 +69,7 @@ function solve(solver::LocalApproxValueIterationSolver, mdp::Union{MDP,POMDP})
     # Get attributes of interpolator
     num_interps::Int = n_interpolants(policy.interp)
     interp_states::Vector = interpolating_states(policy.interp)
-    interp_values = interpolants(policy.interp)
+    interp_values::Vector = interpolants(policy.interp)
     
     # Main loop
     for i = 1 : max_iterations
