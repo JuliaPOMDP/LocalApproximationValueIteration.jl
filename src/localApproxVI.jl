@@ -16,6 +16,9 @@ mutable struct LocalApproxValueIterationPolicy <: Policy
     action_map::Vector # Maps the action index to the concrete action type
     mdp::Union{MDP,POMDP} # uses the model for indexing in the action function
 
+    # XXX (Zach) Style note: Prefer outer constructors to inner constructors.
+    #            That will keep things simpler, in the long run when you have to parameterize classes.
+    #            For performance, you may want to eventually parameterize this for type stability.
     # Constructor with interpolator initialized
     function LocalApproxValueIterationPolicy(mdp::Union{MDP,POMDP},
                                              interp::LocalValueFnApproximator)
@@ -28,6 +31,7 @@ mutable struct LocalApproxValueIterationPolicy <: Policy
 
 end
 
+# XXX (Zach) Get rid of this function; just use the constructor :) Any function that begins with create_ is from the dark early days of POMDPs.jl
 # Return a default local VI policy
 function create_policy(solver::LocalApproxValueIterationSolver, mdp::Union{MDP,POMDP}, interp::LocalValueFnApproximator)
     return LocalApproxValueIterationPolicy(mdp,interp)
@@ -54,7 +58,8 @@ end
     @req pdf(::D,::S)
 end
 
-
+# XXX (Zach) The solve function should only have two arguments for interoperability with other solvers.
+#            interp and verbose should be solver parameters
 function solve(solver::LocalApproxValueIterationSolver, mdp::Union{MDP,POMDP}, interp::LocalValueFnApproximator; verbose::Bool=false)
 
     @warn_requirements solve(solver,mdp)
@@ -89,7 +94,7 @@ function solve(solver::LocalApproxValueIterationSolver, mdp::Union{MDP,POMDP}, i
             # and vice versa are called inside the interpolator
             sub_aspace = actions(mdp,s)
 
-            if is_terminal(mdp, s)
+            if is_terminal(mdp, s) # XXX (Zach) Yes, terminal states are handled perfectly here!
                 interp_values[istate] = 0.0
             else
                 old_util = interp_values[istate]
@@ -99,6 +104,8 @@ function solve(solver::LocalApproxValueIterationSolver, mdp::Union{MDP,POMDP}, i
                     iaction = action_index(mdp,a)
                     dist = transition(mdp,s,a)
                     u::Float64 = 0.0
+                    # XXX (Zach) If you want to handle continuous problems, you can't use weighted_iterator
+                    #            You should use the generative interface instead of the explicit one
                     for (sp, p) in weighted_iterator(dist)
                         p = 0.0 ? continue : nothing
                         r = reward(mdp, s, a, sp)
