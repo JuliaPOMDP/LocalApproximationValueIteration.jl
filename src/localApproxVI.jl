@@ -28,10 +28,6 @@ mutable struct LocalApproxValueIterationPolicy <: Policy
 
 end
 
-# Return a default local VI policy
-function create_policy(solver::LocalApproxValueIterationSolver, mdp::Union{MDP,POMDP}, interp::LocalValueFnApproximator)
-    return LocalApproxValueIterationPolicy(mdp,interp)
-end
 
 @POMDP_require solve(solver::LocalApproxValueIterationSolver, mdp::Union{MDP,POMDP}) begin
     
