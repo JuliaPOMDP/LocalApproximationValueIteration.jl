@@ -2,6 +2,8 @@
 mutable struct LocalApproxValueIterationSolver <: Solver
     max_iterations::Int64 # max number of iterations
     belres::Float64 # the Bellman Residual
+    interp::LocalValueFnApproximator # Will be copied over to each policy
+    verbose::Bool # Whether to print while solving or not
 end
 # Default constructor
 function LocalApproxValueIterationSolver(;max_iterations::Int64=100, belres::Float64=1e-3)
@@ -15,17 +17,15 @@ mutable struct LocalApproxValueIterationPolicy <: Policy
     interp::LocalValueFnApproximator # General approximator to be used in VI 
     action_map::Vector # Maps the action index to the concrete action type
     mdp::Union{MDP,POMDP} # uses the model for indexing in the action function
+end
 
-    # Constructor with interpolator initialized
-    function LocalApproxValueIterationPolicy(mdp::Union{MDP,POMDP},
-                                             interp::LocalValueFnApproximator)
-
-        self.interp = interp # Assume user has constructed and initialized
-        self.action_map = ordered_actions(mdp)
-        self.mdp = mdp
-        return self
-    end
-
+# Constructor with interpolator initialized
+function LocalApproxValueIterationPolicy(mdp::Union{MDP,POMDP},
+                                         solver::LocalApproxValueIterationSolver)
+    self.interp = deepcopy(solver.interp) # So that different policies (with different T,R) for same solver can be used
+    self.action_map = ordered_actions(mdp)
+    self.mdp = mdp
+    return self
 end
 
 
