@@ -12,10 +12,8 @@ import POMDPs: Solver, solve, Policy, action, value
 export
     LocalApproxValueIterationPolicy,
     LocalApproxValueIterationSolver,
-    create_policy,
     solve,
     action,
-    value,
-    locals
+    value
 
 end # module
