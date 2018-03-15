@@ -1,6 +1,9 @@
+# TODO : Is this necessary or can it see because of the module?
+include("localValueFunctionApproximator")
+
 # The solver type
-mutable struct LocalApproximationValueIterationSolver <: Solver
-    interp::LocalValueFnApproximator # Will be copied over by value to each policy
+mutable struct LocalApproximationValueIterationSolver{RNG<:AbstractRNG} <: Solver
+    interp::LocalValueFunctionApproximator # Will be copied over by value to each policy
     max_iterations::Int64 # max number of iterations
     belres::Float64 # the Bellman Residual
     verbose::Bool # Whether to print while solving or not

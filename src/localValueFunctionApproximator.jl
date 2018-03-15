@@ -1,7 +1,7 @@
 """
 Base type for a local value function approximator
 """
-abstract type LocalValueFnApproximator end
+abstract type LocalValueFunctionApproximator end
 
 
 function n_interpolants end

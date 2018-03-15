@@ -17,3 +17,7 @@ export
     value
 
 end # module
+
+include("localApproximationVI.jl")
+include("localValueFunctionApproximator.jl")
+include("localGIValueFunctionApproximator.jl")
