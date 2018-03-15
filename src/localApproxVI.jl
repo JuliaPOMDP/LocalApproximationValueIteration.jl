@@ -1,18 +1,21 @@
 # The solver type
 mutable struct LocalApproxValueIterationSolver <: Solver
+    interp::LocalValueFnApproximator # Will be copied over by value to each policy
     max_iterations::Int64 # max number of iterations
     belres::Float64 # the Bellman Residual
-    interp::LocalValueFnApproximator # Will be copied over to each policy
     verbose::Bool # Whether to print while solving or not
+    rng::RNG # Seed if req'd
 end
+
 # Default constructor
-function LocalApproxValueIterationSolver(;max_iterations::Int64=100, belres::Float64=1e-3)
-    return LocalApproxValueIterationSolver(max_iterations, belres)
+function LocalApproxValueIterationSolver(interp::LocalValueFnApproximator;max_iterations::Int64=100, belres::Float64=1e-3,verbose::Bool=false,rng::RNG=Base.GLOBAL_RNG)
+    # TODO : Will this copy the interp object by reference?
+    return LocalApproxValueIterationSolver(interp,max_iterations, belres, verbose, rng)
 end
 
 # The policy type
-# TODO : For now, we work directly with value function
-# TODO : And extract actions at the end from the interp object
+# NOTE : For now, we work directly with value function
+# And extract actions at the end from the interp object
 mutable struct LocalApproxValueIterationPolicy <: Policy
     interp::LocalValueFnApproximator # General approximator to be used in VI 
     action_map::Vector # Maps the action index to the concrete action type
@@ -78,10 +81,13 @@ function solve(solver::LocalApproxValueIterationSolver, mdp::Union{MDP,POMDP})
 
         for (istate,s) in enumerate(interp_states)
 
-            # TODO : Assume that interpolator's state values can be directly
+            # NOTE : Assume that interpolator's state values can be directly
             # used with T and R functions - the converters from state to vector 
             # and vice versa are called inside the interpolator
             sub_aspace = actions(mdp,s)
+
+            # TODO : Can we check if mdp is generative or explicit here?
+            generative::Bool = is_generative(mdp)
 
             if is_terminal(mdp, s)
                 interp_values[istate] = 0.0
@@ -91,13 +97,27 @@ function solve(solver::LocalApproxValueIterationSolver, mdp::Union{MDP,POMDP})
 
                 for a in iterator(sub_aspace)
                     iaction = action_index(mdp,a)
-                    dist = transition(mdp,s,a)
                     u::Float64 = 0.0
-                    for (sp, p) in weighted_iterator(dist)
-                        p = 0.0 ? continue : nothing
-                        r = reward(mdp, s, a, sp)
-                        u += p * (r + discount_factor*evaluate(policy.interp, sp))
-                    end # next-states
+
+                    # Do bellman backup based on generative / explicit
+                    if generative
+                        # TODO : Can we ask this of user?
+                        n_samples = n_generative_samples(mdp)
+                        for j in 1:n_samples
+                            sp, r = generate_sr(mdp, s, a, sol.rng)
+                            u += r + discount_factor*evaluate(policy.interp, sp)
+                        end
+                        u = u / n_samples
+                    else
+                        # Do for explicit
+                        dist = transition(mdp,s,a)
+                        for (sp, p) in weighted_iterator(dist)
+                            p = 0.0 ? continue : nothing
+                            r = reward(mdp, s, a, sp)
+                            u += p * (r + discount_factor*evaluate(policy.interp, sp))
+                        end # next-states
+                    end
+                    
                     max_util = (u > max_util) ? u : max_util
                 end #action
 
