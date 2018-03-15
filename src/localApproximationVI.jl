@@ -1,5 +1,5 @@
 # The solver type
-mutable struct LocalApproxValueIterationSolver <: Solver
+mutable struct LocalApproximationValueIterationSolver <: Solver
     interp::LocalValueFnApproximator # Will be copied over by value to each policy
     max_iterations::Int64 # max number of iterations
     belres::Float64 # the Bellman Residual
@@ -8,23 +8,23 @@ mutable struct LocalApproxValueIterationSolver <: Solver
 end
 
 # Default constructor
-function LocalApproxValueIterationSolver(interp::LocalValueFnApproximator;max_iterations::Int64=100, belres::Float64=1e-3,verbose::Bool=false,rng::RNG=Base.GLOBAL_RNG)
+function LocalApproximationValueIterationSolver(interp::LocalValueFnApproximator;max_iterations::Int64=100, belres::Float64=1e-3,verbose::Bool=false,rng::RNG=Base.GLOBAL_RNG)
     # TODO : Will this copy the interp object by reference?
-    return LocalApproxValueIterationSolver(interp,max_iterations, belres, verbose, rng)
+    return LocalApproximationValueIterationSolver(interp,max_iterations, belres, verbose, rng)
 end
 
 # The policy type
 # NOTE : For now, we work directly with value function
 # And extract actions at the end from the interp object
-mutable struct LocalApproxValueIterationPolicy <: Policy
+mutable struct LocalApproximationValueIterationPolicy <: Policy
     interp::LocalValueFnApproximator # General approximator to be used in VI 
     action_map::Vector # Maps the action index to the concrete action type
     mdp::Union{MDP,POMDP} # uses the model for indexing in the action function
 end
 
 # Constructor with interpolator initialized
-function LocalApproxValueIterationPolicy(mdp::Union{MDP,POMDP},
-                                         solver::LocalApproxValueIterationSolver)
+function LocalApproximationValueIterationPolicy(mdp::Union{MDP,POMDP},
+                                         solver::LocalApproximationValueIterationSolver)
     self.interp = deepcopy(solver.interp) # So that different policies (with different T,R) for same solver can be used
     self.action_map = ordered_actions(mdp)
     self.mdp = mdp
@@ -32,7 +32,7 @@ function LocalApproxValueIterationPolicy(mdp::Union{MDP,POMDP},
 end
 
 
-@POMDP_require solve(solver::LocalApproxValueIterationSolver, mdp::Union{MDP,POMDP}) begin
+@POMDP_require solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,POMDP}) begin
     
     P = typeof(mdp)
     S = state_type(P)
@@ -40,21 +40,25 @@ end
     @req discount(::P)
     @req n_actions(::P)
     @subreq ordered_actions(mdp)
-    @req transition(::P,::S,::A)
+    
+    # TODO : Can we specify EITHER requiring the below OR requiring generate_sr and n_generative_samples?
+    # @req transition(::P,::S,::A)
+    # dist = transition(mdp, s, a)
+    # D = typeof(dist)
+    # @req iterator(::D)
+
     @req reward(::P,::S,::A,::S)
     @req action_index(::P, ::A)
     @req actions(::P, ::S)
     as = actions(mdp)
     @req iterator(::typeof(as))
     a = first(iterator(as))
-    dist = transition(mdp, s, a)
-    D = typeof(dist)
-    @req iterator(::D)
-    @req pdf(::D,::S)
+    
+    
 end
 
 
-function solve(solver::LocalApproxValueIterationSolver, mdp::Union{MDP,POMDP})
+function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,POMDP})
 
     @warn_requirements solve(solver,mdp)
 
@@ -64,7 +68,7 @@ function solve(solver::LocalApproxValueIterationSolver, mdp::Union{MDP,POMDP})
     discount_factor = discount(mdp)
 
     # Initialize the policy
-    policy = LocalApproxValueIterationPolicy(mdp,solver)
+    policy = LocalApproximationValueIterationPolicy(mdp,solver)
 
     total_time::Float64 = 0.0
     iter_time::Float64 = 0.0
@@ -141,7 +145,7 @@ function solve(solver::LocalApproxValueIterationSolver, mdp::Union{MDP,POMDP})
 end
 
 
-function value(policy::LocalApproxValueIterationPolicy, s::S) where S
+function value(policy::LocalApproximationValueIterationPolicy, s::S) where S
 
     # Again, assume that state-to-vector converter called by interpolator
     val = evaluate(policy.interp,s)
@@ -149,7 +153,7 @@ function value(policy::LocalApproxValueIterationPolicy, s::S) where S
 end
 
 # Not explicitly stored in policy - extract from value function interpolation
-function action(policy::LocalApproxValueIterationPolicy, s::S) where S
+function action(policy::LocalApproximationValueIterationPolicy, s::S) where S
     
     mdp = policy.mdp
     best_a_idx = -1

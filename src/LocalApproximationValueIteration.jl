@@ -10,8 +10,8 @@ using POMDPToolbox
 import POMDPs: Solver, solve, Policy, action, value 
 
 export
-    LocalApproxValueIterationPolicy,
-    LocalApproxValueIterationSolver,
+    LocalApproximationValueIterationPolicy,
+    LocalApproximationValueIterationSolver,
     solve,
     action,
     value
