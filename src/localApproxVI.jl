@@ -158,13 +158,26 @@ function action(policy::LocalApproxValueIterationPolicy, s::S) where S
 
     for a in iterator(sub_aspace)
         iaction = action_index(mdp)
-        dist = transition(mdp, s, a) # creates distribution over neighbors
         u::Float64 = 0.0
-        for (sp, p) in weighted_iterator(dist)
-            p == 0.0 ? continue : nothing
-            r = reward(mdp, s, a, sp)
-            u += p * (r + discount_factor*evaluate(policy.interp, sp))
+
+        # Similar to what is done above
+        if generative
+            n_samples = n_generative_samples(mdp)
+            for j in 1:n_samples
+                sp, r = generate_sr(mdp, s, a, sol.rng)
+                u += r + discount_factor*evaluate(policy.interp, sp)
+            end
+            u = u / n_samples
+        else
+            # Do for explicit
+            dist = transition(mdp,s,a)
+            for (sp, p) in weighted_iterator(dist)
+                p = 0.0 ? continue : nothing
+                r = reward(mdp, s, a, sp)
+                u += p * (r + discount_factor*evaluate(policy.interp, sp))
+            end # next-states
         end
+
         if u > max_util
             max_util = u
             best_a_idx = iaction
