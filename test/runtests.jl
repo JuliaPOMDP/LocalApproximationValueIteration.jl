@@ -1,5 +1,9 @@
+using POMDPModels
+using POMDPs
+using DiscreteValueIteration
+using GridInterpolations
 using LocalApproximationValueIteration
 using Base.Test
 
 # write your own tests here
-@test 1 == 2
+include("runtests_versus_discrete_vi.jl")
