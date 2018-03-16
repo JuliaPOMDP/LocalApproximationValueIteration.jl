@@ -1,5 +1,5 @@
 # TODO : Is this necessary or can it see because of the module?
-include("localValueFunctionApproximator")
+include("localValueFunctionApproximator.jl")
 
 # The solver type
 mutable struct LocalApproximationValueIterationSolver{RNG<:AbstractRNG} <: Solver
@@ -27,7 +27,7 @@ end
 
 # Constructor with interpolator initialized
 function LocalApproximationValueIterationPolicy(mdp::Union{MDP,POMDP},
-                                         solver::LocalApproximationValueIterationSolver)
+                                                solver::LocalApproximationValueIterationSolver)
     self.interp = deepcopy(solver.interp) # So that different policies (with different T,R) for same solver can be used
     self.action_map = ordered_actions(mdp)
     self.mdp = mdp
@@ -135,8 +135,8 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
             end
         end #state
 
-        # Update all interpolant values
-        batchUpdate(policy.interp, interp_values)
+        # TODO : interp_values directly edits the values in place
+        # Is that acceptable?
 
         iter_time = toq()
         total_time += iter_time
