@@ -1,16 +1,18 @@
 using GridInterpolations
 
+include("localValueFunctionApproximator.jl")
+
 # TODO : Should I template by state-type here? (And below - wherever I do it)
 # I want to 'require' that the S type has the conversion methods defined
 # Where do I put those requirements
-mutable struct localGIValueFunctionApproximator{S,G<:AbstractGrid} <: localGIValueFunctionApproximator
+mutable struct LocalGIValueFunctionApproximator{S,G<:AbstractGrid} <: LocalValueFunctionApproximator
   grid::G
   gvalues::Vector{Float64}
   gstates::Vector{S}
 end
 
 # Constructor where grid is passed
-function localGIValueFunctionApproximator{S,G<:AbstractGrid}(grid::G)
+function LocalGIValueFunctionApproximator{S,G<:AbstractGrid}(grid::G)
   self.grid = grid
   self.gvalues = zeros(length(grid))
 
@@ -28,25 +30,25 @@ end
 ################ INTERFACE FUNCTIONS ################
 
 # Return the number of vertices in the grid
-function n_interpolants(gifa::localGIValueFunctionApproximator)
+function n_interpolants(gifa::LocalGIValueFunctionApproximator)
   return length(gifa.grid)
 end
 
 # Return the vector of states 
-function interpolating_states(gifa::localGIValueFunctionApproximator)
+function interpolating_states(gifa::LocalGIValueFunctionApproximator)
   return gifa.gstates
 end
 
-function interpolants(gifa::localGIValueFunctionApproximator)
+function interpolants(gifa::LocalGIValueFunctionApproximator)
   return gifa.gvalues
 end
 
-function evaluate{S}(gifa::localGIValueFunctionApproximator, s::S)
+function evaluate{S}(gifa::LocalGIValueFunctionApproximator, s::S)
   state_vector = convertStateToVector{S}(s)
   value = interpolate(gifa.grid,gifa.gvalues,state_vector)
   return value
 end
 
-function batchUpdate(gifa::localGIValueFunctionApproximator, gvalues::Vector{Float64})
+function batchUpdate(gifa::LocalGIValueFunctionApproximator, gvalues::Vector{Float64})
   gifa.gvalues = deepcopy(gvalues)
 end

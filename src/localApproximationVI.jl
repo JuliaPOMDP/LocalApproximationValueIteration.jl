@@ -1,4 +1,3 @@
-# TODO : Is this necessary or can it see because of the module?
 include("localValueFunctionApproximator.jl")
 
 # The solver type
@@ -11,7 +10,7 @@ mutable struct LocalApproximationValueIterationSolver{RNG<:AbstractRNG} <: Solve
 end
 
 # Default constructor
-function LocalApproximationValueIterationSolver(interp::LocalValueFnApproximator;max_iterations::Int64=100, belres::Float64=1e-3,verbose::Bool=false,rng::RNG=Base.GLOBAL_RNG)
+function LocalApproximationValueIterationSolver{RNG<:AbstractRNG}(interp::LocalValueFunctionApproximator;max_iterations::Int64=100, belres::Float64=1e-3,verbose::Bool=false,rng::RNG=Base.GLOBAL_RNG)
     # TODO : Will this copy the interp object by reference?
     return LocalApproximationValueIterationSolver(interp,max_iterations, belres, verbose, rng)
 end
@@ -20,7 +19,7 @@ end
 # NOTE : For now, we work directly with value function
 # And extract actions at the end from the interp object
 mutable struct LocalApproximationValueIterationPolicy <: Policy
-    interp::LocalValueFnApproximator # General approximator to be used in VI 
+    interp::LocalValueFunctionApproximator # General approximator to be used in VI 
     action_map::Vector # Maps the action index to the concrete action type
     mdp::Union{MDP,POMDP} # uses the model for indexing in the action function
 end
