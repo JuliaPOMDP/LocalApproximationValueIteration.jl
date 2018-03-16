@@ -11,14 +11,16 @@ using POMDPToolbox
 import POMDPs: Solver, solve, Policy, action, value 
 
 export
+    LocalValueFunctionApproximator,
+    LocalGIValueFunctionApproximator,
     LocalApproximationValueIterationPolicy,
     LocalApproximationValueIterationSolver,
     solve,
     action,
     value
 
-end # module
-
+include("localApproximationVI.jl")
 include("localValueFunctionApproximator.jl")
 include("localGIValueFunctionApproximator.jl")
-include("localApproximationVI.jl")
+
+end # module

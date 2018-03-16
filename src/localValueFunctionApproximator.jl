@@ -6,6 +6,6 @@ abstract type LocalValueFunctionApproximator end
 
 function n_interpolants end
 function interpolating_states end
-function interpolants end
+function get_interpolants end
 function evaluate end
 function batchUpdate end

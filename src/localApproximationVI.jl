@@ -1,5 +1,6 @@
 include("localValueFunctionApproximator.jl")
 
+
 # The solver type
 mutable struct LocalApproximationValueIterationSolver{RNG<:AbstractRNG} <: Solver
     interp::LocalValueFunctionApproximator # Will be copied over by value to each policy

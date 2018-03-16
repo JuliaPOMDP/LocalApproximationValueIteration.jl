@@ -1,5 +1,4 @@
 using GridInterpolations
-
 include("localValueFunctionApproximator.jl")
 
 # TODO : Should I template by state-type here? (And below - wherever I do it)
@@ -12,15 +11,14 @@ mutable struct LocalGIValueFunctionApproximator{S,G<:AbstractGrid} <: LocalValue
 end
 
 # Constructor where grid is passed
-function LocalGIValueFunctionApproximator{S,G<:AbstractGrid}(grid::G)
+function LocalGIValueFunctionApproximator{G<:AbstractGrid}(grid::G)
   self.grid = grid
   self.gvalues = zeros(length(grid))
 
   # TODO : Convert each vertex to state and put in gstates. Can I do this?
-  self.gstates = Vector{S}(length(grid))
   state_vectors = vertices(grid)
   for i = 1 : length(grid)
-    self.gstates[i] = convertVectorToState{S}(state_vectors[i])
+    push!(self.gstates,convertVectorToState(state_vectors[i]))
   end
 
   return self
@@ -39,12 +37,12 @@ function interpolating_states(gifa::LocalGIValueFunctionApproximator)
   return gifa.gstates
 end
 
-function interpolants(gifa::LocalGIValueFunctionApproximator)
+function get_interpolants(gifa::LocalGIValueFunctionApproximator)
   return gifa.gvalues
 end
 
 function evaluate{S}(gifa::LocalGIValueFunctionApproximator, s::S)
-  state_vector = convertStateToVector{S}(s)
+  state_vector = convertStateToVector(s)
   value = interpolate(gifa.grid,gifa.gvalues,state_vector)
   return value
 end
