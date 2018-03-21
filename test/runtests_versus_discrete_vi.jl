@@ -6,20 +6,15 @@ Then randomly sample several points on full grid and compare values of discreteV
 =#
 
 # State conversion functions
-function convertStateToVector(s::GridWorldState)
-  vect = [convert(Float64,s.x),convert(Float64,s.y)]
-  return vect
+function POMDPs.convert_s(::Type{AbstractVector{Float64}}, s::GridWorldState, mdp::GridWorld)
+  v = SVector{2,Float64}(s.x, s.y)
+  return v
 end
 
-function convertVectorToState(vect::Vector{Float64})
-  s = GridWorldState(convert(Int64,vect[1]), convert(Int64,vect[2]))
-  return s
+function POMDPs.convert_s(::Type{GridWorldState}, v::AbstractVector{Float64}, mdp::GridWorld)
+  s = GridWorldState(convert(Int64,v[1]), convert(Int64, v[2]))
 end
 
-# TODO : We should define this for standard types somewhere
-function is_generative(::GridWorld)
-  return false
-end
 
 
 function test_against_full_grid()
@@ -45,9 +40,25 @@ function test_against_full_grid()
 
   # Setup grid with 0.1 resolution
   grid = RectangleGrid(linspace(1,100,10), linspace(1,100,10))
-  interp = LocalGIValueFunctionApproximator{RectangleGrid}(grid)
-  approx_solver = LocalApproximationValueIterationSolver(interp)
-  approx_policy = solve(approx_solver, mdp, verbose=True)
+
+  # Create the interpolation object
+  gvalues = zeros(length(grid))
+  state_vectors = vertices(grid)
+  gstates = Vector{GridWorldState}(length(grid))
+  for (i,sv) in enumerate(state_vectors)
+    gstates[i] = convert_s(GridWorldState, sv, mdp)
+  end
+  interp = LocalGIValueFunctionApproximator(grid,gvalues,gstates)
+
+  # Try out some interp stuff
+  println(n_interpolants(interp))
+
+  dummy_state = convert_s(GridWorldState, SVector{2,Float64}(40,50), mdp)
+  println(evaluate(interp,dummy_state,mdp))
+
+
+  approx_solver = LocalApproximationValueIterationSolver(interp, verbose=true, max_iterations = 1000)
+  approx_policy = solve(approx_solver, mdp)
   return true
 end
 
