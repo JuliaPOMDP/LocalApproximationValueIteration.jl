@@ -10,19 +10,23 @@ mutable struct LocalGIValueFunctionApproximator{S,G<:AbstractGrid} <: LocalValue
   gstates::Vector{S}
 end
 
+# TODO : So no outer constructor for this right?
+
 # Constructor where grid is passed
-function LocalGIValueFunctionApproximator{G<:AbstractGrid}(grid::G)
-  self.grid = grid
-  self.gvalues = zeros(length(grid))
+# function LocalGIValueFunctionApproximator{G<:AbstractGrid}(grid::G)
+#   self.grid = grid
+#   self.gvalues = zeros(length(grid))
 
-  # TODO : Convert each vertex to state and put in gstates. Can I do this?
-  state_vectors = vertices(grid)
-  for i = 1 : length(grid)
-    push!(self.gstates,convertVectorToState(state_vectors[i]))
-  end
+#   # TODO : Convert each vertex to state and put in gstates. Can I do this?
+#   state_vectors = vertices(grid)
+#   for i = 1 : length(grid)
+#     push!(self.gstates,convertVectorToState(state_vectors[i]))
+#   end
 
-  return self
-end
+#   return self
+# end
+
+# TODO : Should we define an 'initialize' method that just uses the grid and initializes other stuff to zero?
 
 
 ################ INTERFACE FUNCTIONS ################
@@ -41,8 +45,8 @@ function get_interpolants(gifa::LocalGIValueFunctionApproximator)
   return gifa.gvalues
 end
 
-function evaluate{S}(gifa::LocalGIValueFunctionApproximator, s::S)
-  state_vector = convertStateToVector(s)
+function evaluate{S}(gifa::LocalGIValueFunctionApproximator, s::S, mdp::Union{MDP,POMDP})
+  state_vector = convert_s(AbstractVector{Float64},s,mdp)
   value = interpolate(gifa.grid,gifa.gvalues,state_vector)
   return value
 end

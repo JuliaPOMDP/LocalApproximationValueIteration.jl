@@ -10,14 +10,24 @@ using POMDPToolbox
 
 import POMDPs: Solver, solve, Policy, action, value 
 
+# Exports related to solver
 export
-    LocalValueFunctionApproximator,
-    LocalGIValueFunctionApproximator,
     LocalApproximationValueIterationPolicy,
     LocalApproximationValueIterationSolver,
     solve,
     action,
     value
+
+# Exports related to approximator
+export
+    LocalValueFunctionApproximator,
+    LocalGIValueFunctionApproximator,
+    n_interpolants,
+    interpolating_states,
+    get_interpolants,
+    evaluate,
+    batchUpdate
+
 
 include("localApproximationVI.jl")
 include("localValueFunctionApproximator.jl")

@@ -28,10 +28,7 @@ end
 # Constructor with interpolator initialized
 function LocalApproximationValueIterationPolicy(mdp::Union{MDP,POMDP},
                                                 solver::LocalApproximationValueIterationSolver)
-    self.interp = deepcopy(solver.interp) # So that different policies (with different T,R) for same solver can be used
-    self.action_map = ordered_actions(mdp)
-    self.mdp = mdp
-    return self
+    return LocalApproximationValueIterationPolicy(deepcopy(solver.interp),ordered_actions(mdp),mdp)
 end
 
 
@@ -79,7 +76,7 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
     # Get attributes of interpolator
     num_interps::Int = n_interpolants(policy.interp)
     interp_states::Vector = interpolating_states(policy.interp)
-    interp_values::Vector = interpolants(policy.interp)
+    interp_values::Vector = get_interpolants(policy.interp)
     
     # Main loop
     for i = 1 : max_iterations
@@ -94,9 +91,10 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
             sub_aspace = actions(mdp,s)
 
             # TODO : Can we check if mdp is generative or explicit here?
-            generative::Bool = is_generative(mdp)
+            #generative::Bool = is_generative(mdp)
+            generative::Bool = false
 
-            if is_terminal(mdp, s)
+            if isterminal(mdp, s)
                 interp_values[istate] = 0.0
             else
                 old_util = interp_values[istate]
@@ -119,9 +117,9 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
                         # Do for explicit
                         dist = transition(mdp,s,a)
                         for (sp, p) in weighted_iterator(dist)
-                            p = 0.0 ? continue : nothing
+                            p == 0.0 ? continue : nothing
                             r = reward(mdp, s, a, sp)
-                            u += p * (r + discount_factor*evaluate(policy.interp, sp))
+                            u += p * (r + discount_factor*evaluate(policy.interp, sp, mdp))
                         end # next-states
                     end
                     
@@ -151,7 +149,7 @@ end
 function value(policy::LocalApproximationValueIterationPolicy, s::S) where S
 
     # Again, assume that state-to-vector converter called by interpolator
-    val = evaluate(policy.interp,s)
+    val = evaluate(policy.interp, s, policy.mdp)
     return val
 end
 
@@ -162,9 +160,14 @@ function action(policy::LocalApproximationValueIterationPolicy, s::S) where S
     best_a_idx = -1
     max_util = -Inf
     sub_aspace = actions(mdp,s)
+    discount_factor = discount(mdp)
+
+    # generative::Bool = is_generative(mdp)
+    # TODO : Need to generalize this :P
+    generative::Bool = false
 
     for a in iterator(sub_aspace)
-        iaction = action_index(mdp)
+        iaction = action_index(mdp, a)
         u::Float64 = 0.0
 
         # Similar to what is done above
@@ -179,9 +182,9 @@ function action(policy::LocalApproximationValueIterationPolicy, s::S) where S
             # Do for explicit
             dist = transition(mdp,s,a)
             for (sp, p) in weighted_iterator(dist)
-                p = 0.0 ? continue : nothing
+                p == 0.0 ? continue : nothing
                 r = reward(mdp, s, a, sp)
-                u += p * (r + discount_factor*evaluate(policy.interp, sp))
+                u += p * (r + discount_factor*evaluate(policy.interp, sp, mdp))
             end # next-states
         end
 
