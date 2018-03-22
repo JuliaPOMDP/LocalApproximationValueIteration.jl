@@ -116,7 +116,7 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
                         # Generative Model
                         for j in 1:solver.n_generative_samples
                             sp, r = generate_sr(mdp, s, a, sol.rng)
-                            u += r + discount_factor*evaluate(policy.interp, sp)
+                            u += r + discount_factor*evaluate(policy.interp, sp, mdp)
                         end
                         u = u / solver.n_generative_samples
                     else
@@ -177,7 +177,7 @@ function action(policy::LocalApproximationValueIterationPolicy, s::S) where S
         if solver.is_mdp_generative
             for j in 1:solver.n_generative_samples
                 sp, r = generate_sr(mdp, s, a, sol.rng)
-                u += r + discount_factor*evaluate(policy.interp, sp)
+                u += r + discount_factor*evaluate(policy.interp, sp, mdp)
             end
             u = u / solver.n_generative_samples
         else
