@@ -4,6 +4,8 @@ using DiscreteValueIteration
 using GridInterpolations
 using LocalApproximationValueIteration
 using StaticArrays
+using Distances
+using NearestNeighbors
 
 function POMDPs.convert_s(::Type{AbstractVector{Float64}}, s::GridWorldState, mdp::GridWorld)
   v = SVector{2,Float64}(s.x, s.y)
@@ -34,7 +36,7 @@ policy = create_policy(solver, mdp)
 policy = solve(solver, mdp, policy, verbose=false)
 
 
-# Setup grid with 0.1 resolution
+#Setup grid with 0.1 resolution
 grid = RectangleGrid(linspace(1,100,10), linspace(1,100,10))
 
 # Create the interpolation object
@@ -50,10 +52,34 @@ interp = LocalGIValueFunctionApproximator(grid,gvalues,gstates)
 println(n_interpolants(interp))
 
 dummy_state = convert_s(GridWorldState, SVector{2,Float64}(40,50), mdp)
-println(evaluate(interp,dummy_state,mdp))
+println(LocalApproximationValueIteration.evaluate(interp,dummy_state,mdp))
 
 
-approx_solver = LocalApproximationValueIterationSolver(interp, verbose=false, max_iterations = 1000)
-approx_policy = solve(approx_solver, mdp)
+approx_gi_solver = LocalApproximationValueIterationSolver(interp, verbose=false, max_iterations = 1000)
+approx_gi_policy = solve(approx_gi_solver, mdp)
 
-# TODO : Now need to compare policies
+# Now construct nearest neighbor tree
+nn_samples = 100
+nnvalues = zeros(100)
+nnstates = Vector{GridWorldState}(100)
+nndata = Vector{SVector{2,Float64}}(100)
+idx = 1
+for i in linspace(1,100,10)
+  for j in linspace(1,100,10)
+    #datapt = SVector{2,Float64}(rand(1:100), rand(1:100))
+    datapt = SVector{2,Float64}(i,j)
+    nndata[idx] = datapt
+    nnstates[idx] = convert_s(GridWorldState, datapt, mdp)
+    idx += 1
+  end
+end
+nntree = KDTree(nndata)
+nnfa = LocalNNValueFunctionApproximator(nntree, nnvalues, nnstates, 4, 0.0)
+
+
+approx_nn_solver = LocalApproximationValueIterationSolver(nnfa, verbose=false, max_iterations = 1000)
+approx_nn_policy = solve(approx_nn_solver, mdp)
+
+
+
+
