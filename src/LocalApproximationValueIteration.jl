@@ -22,6 +22,7 @@ export
 export
     LocalValueFunctionApproximator,
     LocalGIValueFunctionApproximator,
+    LocalNNValueFunctionApproximator,
     n_interpolants,
     interpolating_states,
     get_interpolants,
@@ -32,5 +33,5 @@ export
 include("localApproximationVI.jl")
 include("localValueFunctionApproximator.jl")
 include("localGIValueFunctionApproximator.jl")
-
+include("localNNValueFunctionApproximator.jl")
 end # module
