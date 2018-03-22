@@ -8,12 +8,17 @@ mutable struct LocalApproximationValueIterationSolver{RNG<:AbstractRNG} <: Solve
     belres::Float64 # the Bellman Residual
     verbose::Bool # Whether to print while solving or not
     rng::RNG # Seed if req'd
+    is_mdp_generative::Bool # Whether to treat underlying MDP model as generative
+    n_generative_samples::Int64 # If underlying model generative, how many samples to use
 end
 
 # Default constructor
-function LocalApproximationValueIterationSolver{RNG<:AbstractRNG}(interp::LocalValueFunctionApproximator;max_iterations::Int64=100, belres::Float64=1e-3,verbose::Bool=false,rng::RNG=Base.GLOBAL_RNG)
+function LocalApproximationValueIterationSolver{RNG<:AbstractRNG}(interp::LocalValueFunctionApproximator;
+                                                                  max_iterations::Int64=100, belres::Float64=1e-3,
+                                                                  verbose::Bool=false, rng::RNG=Base.GLOBAL_RNG,
+                                                                  is_mdp_generative::Bool=false, n_generative_samples::Int64=0)
     # TODO : Will this copy the interp object by reference?
-    return LocalApproximationValueIterationSolver(interp,max_iterations, belres, verbose, rng)
+    return LocalApproximationValueIterationSolver(interp,max_iterations, belres, verbose, rng, is_mdp_generative, n_generative_samples)
 end
 
 # The policy type
@@ -41,7 +46,7 @@ end
     @req n_actions(::P)
     @subreq ordered_actions(mdp)
     
-    # TODO : Can we specify EITHER requiring the below OR requiring generate_sr and n_generative_samples?
+    # TODO : Can we specify EITHER requiring the below OR requiring generate_sr
     # @req transition(::P,::S,::A)
     # dist = transition(mdp, s, a)
     # D = typeof(dist)
@@ -62,6 +67,11 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
 
     @warn_requirements solve(solver,mdp)
 
+    # Ensure that generative model has a non-zero number of samples
+    if solver.is_mdp_generative
+        @assert solver.n_generative_samples > 0
+    end
+
     # solver parameters
     max_iterations = solver.max_iterations
     belres = solver.belres
@@ -77,6 +87,7 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
     num_interps::Int = n_interpolants(policy.interp)
     interp_states::Vector = interpolating_states(policy.interp)
     interp_values::Vector = get_interpolants(policy.interp)
+
     
     # Main loop
     for i = 1 : max_iterations
@@ -90,10 +101,6 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
             # and vice versa are called inside the interpolator
             sub_aspace = actions(mdp,s)
 
-            # TODO : Can we check if mdp is generative or explicit here?
-            #generative::Bool = is_generative(mdp)
-            generative::Bool = false
-
             if isterminal(mdp, s)
                 interp_values[istate] = 0.0
             else
@@ -105,16 +112,15 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
                     u::Float64 = 0.0
 
                     # Do bellman backup based on generative / explicit
-                    if generative
-                        # TODO : Can we ask this of user?
-                        n_samples = n_generative_samples(mdp)
-                        for j in 1:n_samples
+                    if solver.is_mdp_generative
+                        # Generative Model
+                        for j in 1:solver.n_generative_samples
                             sp, r = generate_sr(mdp, s, a, sol.rng)
                             u += r + discount_factor*evaluate(policy.interp, sp)
                         end
-                        u = u / n_samples
+                        u = u / solver.n_generative_samples
                     else
-                        # Do for explicit
+                        # Explicit Model
                         dist = transition(mdp,s,a)
                         for (sp, p) in weighted_iterator(dist)
                             p == 0.0 ? continue : nothing
@@ -162,22 +168,18 @@ function action(policy::LocalApproximationValueIterationPolicy, s::S) where S
     sub_aspace = actions(mdp,s)
     discount_factor = discount(mdp)
 
-    # generative::Bool = is_generative(mdp)
-    # TODO : Need to generalize this :P
-    generative::Bool = false
 
     for a in iterator(sub_aspace)
         iaction = action_index(mdp, a)
         u::Float64 = 0.0
 
         # Similar to what is done above
-        if generative
-            n_samples = n_generative_samples(mdp)
-            for j in 1:n_samples
+        if solver.is_mdp_generative
+            for j in 1:solver.n_generative_samples
                 sp, r = generate_sr(mdp, s, a, sol.rng)
                 u += r + discount_factor*evaluate(policy.interp, sp)
             end
-            u = u / n_samples
+            u = u / solver.n_generative_samples
         else
             # Do for explicit
             dist = transition(mdp,s,a)
