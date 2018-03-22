@@ -18,8 +18,8 @@ end
 
 rstates = Vector{GridWorldState}()
 rvect = Vector{Float64}()
-for x = 40:60
-  for y = 40:60
+for x = 40:50
+  for y = 50:70
     push!(rstates,GridWorldState(x,y))
     push!(rvect,10.0)
   end
