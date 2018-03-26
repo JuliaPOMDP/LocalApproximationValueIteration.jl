@@ -22,13 +22,19 @@ function n_interpolants(gifa::LocalGIValueFunctionApproximator)
 end
 
 # Return the vector of states 
-function interpolating_states(gifa::LocalGIValueFunctionApproximator)
+function get_all_interpolating_states(gifa::LocalGIValueFunctionApproximator)
   return gifa.gstates
 end
 
-function get_interpolants(gifa::LocalGIValueFunctionApproximator)
+function get_all_interpolants(gifa::LocalGIValueFunctionApproximator)
   return gifa.gvalues
 end
+
+function get_interpolating_nbrs_idxs_wts{S}(gifa::LocalGIValueFunctionApproximator, s::S, mdp::Union{MDP,POMDP})
+  state_vector = convert_s(AbstractVector{Float64},s,mdp)
+  return interpolants(gifa.grid, state_vector)
+end
+
 
 function evaluate{S}(gifa::LocalGIValueFunctionApproximator, s::S, mdp::Union{MDP,POMDP})
   state_vector = convert_s(AbstractVector{Float64},s,mdp)

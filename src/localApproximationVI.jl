@@ -28,12 +28,14 @@ mutable struct LocalApproximationValueIterationPolicy <: Policy
     interp::LocalValueFunctionApproximator # General approximator to be used in VI 
     action_map::Vector # Maps the action index to the concrete action type
     mdp::Union{MDP,POMDP} # uses the model for indexing in the action function
+    is_mdp_generative::Bool
+    n_generative_samples::Bool
 end
 
 # Constructor with interpolator initialized
 function LocalApproximationValueIterationPolicy(mdp::Union{MDP,POMDP},
                                                 solver::LocalApproximationValueIterationSolver)
-    return LocalApproximationValueIterationPolicy(deepcopy(solver.interp),ordered_actions(mdp),mdp)
+    return LocalApproximationValueIterationPolicy(deepcopy(solver.interp),ordered_actions(mdp),mdp,solver.is_mdp_generative,solver.n_generative_samples)
 end
 
 
@@ -85,8 +87,8 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
 
     # Get attributes of interpolator
     num_interps::Int = n_interpolants(policy.interp)
-    interp_states::Vector = interpolating_states(policy.interp)
-    interp_values::Vector = get_interpolants(policy.interp)
+    interp_states::Vector = get_all_interpolating_states(policy.interp)
+    interp_values::Vector = get_all_interpolants(policy.interp)
 
     
     # Main loop
@@ -174,12 +176,12 @@ function action(policy::LocalApproximationValueIterationPolicy, s::S) where S
         u::Float64 = 0.0
 
         # Similar to what is done above
-        if solver.is_mdp_generative
-            for j in 1:solver.n_generative_samples
+        if policy.is_mdp_generative
+            for j in 1:policy.n_generative_samples
                 sp, r = generate_sr(mdp, s, a, sol.rng)
                 u += r + discount_factor*evaluate(policy.interp, sp, mdp)
             end
-            u = u / solver.n_generative_samples
+            u = u / policy.n_generative_samples
         else
             # Do for explicit
             dist = transition(mdp,s,a)

@@ -15,13 +15,47 @@ function n_interpolants(nnfa::LocalNNValueFunctionApproximator)
   return length(nnfa.nntree.indices)
 end
 
-function interpolating_states(nnfa::LocalNNValueFunctionApproximator)
+function get_all_interpolating_states(nnfa::LocalNNValueFunctionApproximator)
   return nnfa.nnstates
 end
 
-function get_interpolants(nnfa::LocalNNValueFunctionApproximator)
+function get_all_interpolants(nnfa::LocalNNValueFunctionApproximator)
   return nnfa.nnvalues
 end
+
+function get_interpolating_nbrs_idxs_wts{S}(nnfa::LocalNNValueFunctionApproximator, s::S, mdp::Union{MDP,POMDP})
+  state_vector = convert_s(AbstractVector{Float64}, s, mdp)
+
+  @assert (nnfa.knnK > 0 || nnfa.rnnR > 0.0)
+  if nnfa.knnK > 0
+    # Do k-NN lookup to get data and distances
+    idxs, dists = knn(nnfa.nntree, state_vector, nnfa.knnK)
+  else
+    # Do inrange lookup to get data
+    # Then use metric to get dists between query and each nearest neighbor
+    idxs = inrange(nnfa.nntree, state_vector, nnfa.rnnR)
+    dists = zeros(length(idxs))
+    for (i,idx) in enumerate(idxs)
+      dists[i] = Distances.evaluate(nnfa.nntree.metric, state_vector, nnfa.nntree.data[idx])
+    end
+  end
+
+  probs = zeros(length(dists))
+
+  # If exactly one point, set that probability of that idxto 1.
+  # and all others to 0.
+  if minimum(dists) < eps(Float64)
+    probs[indmin(dists)] = 1.0
+  else
+    for (i,d) in enumerate(dists)
+      probs[i] = 1.0/d
+    end
+    probs /= sum(probs)
+  end
+
+  return (idxs, probs)
+end
+
 
 function evaluate{S}(nnfa::LocalNNValueFunctionApproximator, s::S, mdp::Union{MDP,POMDP})
   state_vector = convert_s(AbstractVector{Float64}, s, mdp)
