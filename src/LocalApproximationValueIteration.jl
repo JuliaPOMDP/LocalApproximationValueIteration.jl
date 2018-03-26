@@ -24,14 +24,20 @@ export
     LocalGIValueFunctionApproximator,
     LocalNNValueFunctionApproximator,
     n_interpolants,
-    interpolating_states,
-    get_interpolants,
+    get_all_interpolating_states,
+    get_all_interpolants,
+    get_interpolating_nbrs_idxs_wts,
     evaluate,
     batchUpdate
 
+export
+    LocalSubMDPGenerator,
+    generate
 
 include("localApproximationVI.jl")
 include("localValueFunctionApproximator.jl")
 include("localGIValueFunctionApproximator.jl")
 include("localNNValueFunctionApproximator.jl")
+include("localSubMDPGenerator.jl")
+    
 end # module
