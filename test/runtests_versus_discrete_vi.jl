@@ -2,64 +2,66 @@
 Construct a full grid of 100 x 100 and a discrete grid of 10 x 10
 Put reward states of all the same value from (40,40) to (60,60)
 Run discrete VI and localapproxVI on each grid
-Then randomly sample several points on full grid and compare values of discreteVI and localApproxVI
+Then randomly sample several points on full grid and compare 
 =#
 
 # State conversion functions
-function POMDPs.convert_s(::Type{AbstractVector{Float64}}, s::GridWorldState, mdp::GridWorld)
-  v = SVector{2,Float64}(s.x, s.y)
-  return v
+function POMDPs.convert_s(::Type{V} where V <: AbstractVector{Float64}, s::GridWorldState, mdp::GridWorld)
+    v = SVector{3,Float64}(s.x, s.y, convert(Float64,s.done))
+    return v
 end
 
 function POMDPs.convert_s(::Type{GridWorldState}, v::AbstractVector{Float64}, mdp::GridWorld)
-  s = GridWorldState(convert(Int64,v[1]), convert(Int64, v[2]))
+    s = GridWorldState(convert(Int64,round(v[1])), convert(Int64, round(v[2])), convert(Bool, v[3]))
 end
 
 
 
 function test_against_full_grid()
 
-  # Generate reward states and set to reward 10.0
-  rstates = Vector{GridWorldState}()
-  rvect = Vector{Float64}()
-  for x = 40:60
-    for y = 40:60
-      push!(rstates,GridWorldState(x,y))
-      push!(rvect,10.0)
+    # Generate reward states and set to reward 10.0
+    rstates = Vector{GridWorldState}()
+    rvect = Vector{Float64}()
+    for x = 40:60
+        for y = 40:60
+            push!(rstates,GridWorldState(x,y))
+            push!(rvect,10.0)
+        end
     end
-  end
 
-  # Create full MDP - to be used by both!
-  mdp = GridWorld(sx=100, sy=100, rs=rstates, rv=rvect)
+    # Create full MDP - to be used by both!
+    mdp = GridWorld(sx=100, sy=100, rs=rstates, rv=rvect)
 
-  # Solve with discrete VI
-  # solver = ValueIterationSolver()
-  # policy = create_policy(solver, mdp)
-  # policy = solve(solver, mdp, policy, verbose=true)
+    # Solve with discrete VI
+    solver = ValueIterationSolver(max_iterations=1000)
+    policy = create_policy(solver, mdp)
+    policy = solve(solver, mdp, policy, verbose=true)
 
+    # Setup grid with 0.1 resolution
+    # TODO : As I increase VERTICES_PER_AXIS, shouldn't the average error reduce?
+    # That isn't happening! The average error is fluctuating 
+    VERTICES_PER_AXIS = 10
+    grid = RectangleGrid(linspace(1,100,VERTICES_PER_AXIS), linspace(1,100,VERTICES_PER_AXIS), [0.0, 1.0])
+    interp = LocalGIFunctionApproximator(grid)
 
-  # Setup grid with 0.1 resolution
-  grid = RectangleGrid(linspace(1,100,10), linspace(1,100,10))
-
-  # Create the interpolation object
-  gvalues = zeros(length(grid))
-  state_vectors = vertices(grid)
-  gstates = Vector{GridWorldState}(length(grid))
-  for (i,sv) in enumerate(state_vectors)
-    gstates[i] = convert_s(GridWorldState, sv, mdp)
-  end
-  interp = LocalGIFunctionApproximator(grid,gvalues,gstates)
-
-  # Try out some interp stuff
-  println(n_interpolants(interp))
-
-  dummy_state = convert_s(GridWorldState, SVector{2,Float64}(40,50), mdp)
-  println(evaluate(interp,dummy_state,mdp))
+    approx_solver = LocalApproximationValueIterationSolver(interp, verbose=true, max_iterations = 1000)
+    approx_policy = solve(approx_solver, mdp)
 
 
-  approx_solver = LocalApproximationValueIterationSolver(interp, verbose=true, max_iterations = 1000)
-  approx_policy = solve(approx_solver, mdp)
-  return true
+    # Randomly sample 1000 states and compute their value function match
+    total_err = 0.0
+    full_states = ordered_states(mdp)
+    for i = 1:10000
+        state = full_states[i]
+        full_val = value(policy,state)
+        approx_val = value(approx_policy,state)
+        total_err += abs(full_val-approx_val)
+    end
+    avg_err = total_err/10000
+
+    println("Average difference in value function is ", avg_err)
+
+    return true
 end
 
 
