@@ -7,8 +7,10 @@ module LocalApproximationValueIteration
 
 using POMDPs
 using POMDPToolbox
+using LocalFunctionApproximation
 
 import POMDPs: Solver, solve, Policy, action, value 
+
 
 # Exports related to solver
 export
@@ -18,26 +20,6 @@ export
     action,
     value
 
-# Exports related to approximator
-export
-    LocalValueFunctionApproximator,
-    LocalGIValueFunctionApproximator,
-    LocalNNValueFunctionApproximator,
-    n_interpolants,
-    get_all_interpolating_states,
-    get_all_interpolants,
-    get_interpolating_nbrs_idxs_wts,
-    evaluate,
-    batchUpdate
-
-export
-    LocalSubMDPGenerator,
-    generate
-
 include("localApproximationVI.jl")
-include("localValueFunctionApproximator.jl")
-include("localGIValueFunctionApproximator.jl")
-include("localNNValueFunctionApproximator.jl")
-include("localSubMDPGenerator.jl")
     
 end # module

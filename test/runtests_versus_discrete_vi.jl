@@ -48,7 +48,7 @@ function test_against_full_grid()
   for (i,sv) in enumerate(state_vectors)
     gstates[i] = convert_s(GridWorldState, sv, mdp)
   end
-  interp = LocalGIValueFunctionApproximator(grid,gvalues,gstates)
+  interp = LocalGIFunctionApproximator(grid,gvalues,gstates)
 
   # Try out some interp stuff
   println(n_interpolants(interp))
