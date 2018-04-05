@@ -9,7 +9,7 @@ using POMDPs
 using POMDPToolbox
 using LocalFunctionApproximation
 
-import POMDPs: Solver, solve, Policy, action, value 
+import POMDPs: Solver, solve, Policy, action, value
 
 
 # Exports related to solver
@@ -20,6 +20,6 @@ export
     action,
     value
 
-include("localApproximationVI.jl")
+include("local_approximation_vi.jl")
     
 end # module

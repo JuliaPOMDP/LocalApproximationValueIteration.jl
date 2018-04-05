@@ -7,15 +7,17 @@ mutable struct LocalApproximationValueIterationSolver{RNG<:AbstractRNG} <: Solve
     rng::RNG # Seed if req'd
     is_mdp_generative::Bool # Whether to treat underlying MDP model as generative
     n_generative_samples::Int64 # If underlying model generative, how many samples to use
+    terminal_costs_set::Bool
 end
 
 # Default constructor
 function LocalApproximationValueIterationSolver{RNG<:AbstractRNG}(interp::LocalFunctionApproximator;
                                                                   max_iterations::Int64=100, belres::Float64=1e-3,
                                                                   verbose::Bool=false, rng::RNG=Base.GLOBAL_RNG,
-                                                                  is_mdp_generative::Bool=false, n_generative_samples::Int64=0)
+                                                                  is_mdp_generative::Bool=false, n_generative_samples::Int64=0,
+                                                                  terminal_costs_set::Bool=false)
     # TODO : Will this copy the interp object by reference?
-    return LocalApproximationValueIterationSolver(interp,max_iterations, belres, verbose, rng, is_mdp_generative, n_generative_samples)
+    return LocalApproximationValueIterationSolver(interp,max_iterations, belres, verbose, rng, is_mdp_generative, n_generative_samples, terminal_costs_set)
 end
 
 # The policy type
@@ -58,7 +60,6 @@ end
     @req iterator(::typeof(as))
     a = first(iterator(as))
     
-    
 end
 
 
@@ -85,7 +86,7 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
     # Get attributes of interpolator
     num_interps::Int = n_interpolants(policy.interp)
     interp_points::Vector = get_all_interpolating_points(policy.interp)
-    interp_values::Vector = get_all_interpolanting_values(policy.interp)
+    interp_values::Vector = get_all_interpolating_values(policy.interp)
 
     # Obtain the vector of states
     S = state_type(typeof(mdp))
@@ -108,7 +109,9 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
             sub_aspace = actions(mdp,s)
 
             if isterminal(mdp, s)
-                interp_values[istate] = 0.0
+                if !solver.terminal_costs_set
+                    interp_values[istate] = 0.0
+                end
             else
                 old_util = interp_values[istate]
                 max_util = -Inf
@@ -122,7 +125,7 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
                         # Generative Model
                         for j in 1:solver.n_generative_samples
                             sp, r = generate_sr(mdp, s, a, sol.rng)
-                            sp_point = POMDPS.convert_s(Vector{Float64}, sp, mdp)
+                            sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
                             u += r + discount_factor*evaluate(policy.interp, sp_point)
                         end
                         u = u / solver.n_generative_samples
@@ -132,7 +135,7 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
                         for (sp, p) in weighted_iterator(dist)
                             p == 0.0 ? continue : nothing
                             r = reward(mdp, s, a, sp)
-                            sp_point = POMDPS.convert_s(Vector{Float64}, sp, mdp)
+                            sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
                             u += p * (r + discount_factor*evaluate(policy.interp, sp_point))
                         end # next-states
                     end
@@ -149,7 +152,6 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
 
         # TODO : interp_values directly edits the values in place
         # Is that acceptable?
-
         iter_time = toq()
         total_time += iter_time
         solver.verbose ? @printf("[Iteration %-4d] residual: %10.3G | iteration runtime: %10.3f ms, (%10.3G s total)\n", i, residual, iter_time*1000.0, total_time) : nothing
@@ -163,8 +165,8 @@ end
 function value(policy::LocalApproximationValueIterationPolicy, s::S) where S
 
     # Again, assume that state-to-vector converter called by interpolator
-    s_point = POMDPS.convert_s(Vector{Float64}, s, mdp)
-    val = evaluate(policy.interp, s_point, policy.mdp)
+    s_point = POMDPs.convert_s(Vector{Float64}, s, policy.mdp)
+    val = evaluate(policy.interp, s_point)
     return val
 end
 
@@ -186,8 +188,8 @@ function action(policy::LocalApproximationValueIterationPolicy, s::S) where S
         if policy.is_mdp_generative
             for j in 1:policy.n_generative_samples
                 sp, r = generate_sr(mdp, s, a, sol.rng)
-                sp_point = POMDPS.convert_s(Vector{Float64}, sp, mdp)
-                u += r + discount_factor*evaluate(policy.interp, sp_point, mdp)
+                sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
+                u += r + discount_factor*evaluate(policy.interp, sp_point)
             end
             u = u / policy.n_generative_samples
         else
@@ -196,8 +198,8 @@ function action(policy::LocalApproximationValueIterationPolicy, s::S) where S
             for (sp, p) in weighted_iterator(dist)
                 p == 0.0 ? continue : nothing
                 r = reward(mdp, s, a, sp)
-                sp_point = POMDPS.convert_s(Vector{Float64}, sp, mdp)
-                u += p * (r + discount_factor*evaluate(policy.interp, sp_point, mdp))
+                sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
+                u += p * (r + discount_factor*evaluate(policy.interp, sp_point))
             end # next-states
         end
 
