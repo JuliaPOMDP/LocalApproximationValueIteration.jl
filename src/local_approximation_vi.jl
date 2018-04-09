@@ -28,7 +28,7 @@ mutable struct LocalApproximationValueIterationPolicy <: Policy
     action_map::Vector # Maps the action index to the concrete action type
     mdp::Union{MDP,POMDP} # uses the model for indexing in the action function
     is_mdp_generative::Bool
-    n_generative_samples::Bool
+    n_generative_samples::Int64
 end
 
 # Constructor with interpolator initialized
@@ -53,7 +53,8 @@ end
     # D = typeof(dist)
     # @req iterator(::D)
 
-    @req reward(::P,::S,::A,::S)
+    # TODO : Check how to specify requirements correctly
+
     @req action_index(::P, ::A)
     @req actions(::P, ::S)
     as = actions(mdp)
@@ -102,7 +103,6 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
         tic()
 
         for (istate,s) in enumerate(interp_states)
-
             # NOTE : Assume that interpolator's state values can be directly
             # used with T and R functions - the converters from state to vector 
             # and vice versa are called inside the interpolator
@@ -124,7 +124,7 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
                     if solver.is_mdp_generative
                         # Generative Model
                         for j in 1:solver.n_generative_samples
-                            sp, r = generate_sr(mdp, s, a, sol.rng)
+                            sp, r = generate_sr(mdp, s, a, solver.rng)
                             sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
                             u += r + discount_factor*evaluate(policy.interp, sp_point)
                         end
