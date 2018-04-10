@@ -38,8 +38,7 @@ function test_against_full_grid()
     policy = solve(solver, mdp, policy, verbose=true)
 
     # Setup grid with 0.1 resolution
-    # TODO : As I increase VERTICES_PER_AXIS, shouldn't the average error reduce?
-    # That isn't happening! The average error is fluctuating 
+    # As we increase VERTICES_PER_AXIS, the error should reduce
     VERTICES_PER_AXIS = 10
     grid = RectangleGrid(linspace(1,100,VERTICES_PER_AXIS), linspace(1,100,VERTICES_PER_AXIS), [0.0, 1.0])
     interp = LocalGIFunctionApproximator(grid)
