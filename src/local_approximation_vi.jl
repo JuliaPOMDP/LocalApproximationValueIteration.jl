@@ -46,14 +46,16 @@ end
     @req discount(::P)
     @req n_actions(::P)
     @subreq ordered_actions(mdp)
-    
-    # TODO : Can we specify EITHER requiring the below OR requiring generate_sr
-    # @req transition(::P,::S,::A)
-    # dist = transition(mdp, s, a)
-    # D = typeof(dist)
-    # @req iterator(::D)
 
-    # TODO : Check how to specify requirements correctly
+    # Have different requirements depending on whether solver MDP is generative or explicit
+    if solver.is_mdp_generative
+        @req generate_sr(::P, ::S, ::A, ::typeof(solver.rng))
+    else
+        @req transition(::P, ::S, ::A)
+        dist = transition(mdp, s, a)
+        D = typeof(dist)
+        @req iterator(::D)
+    end
 
     @req action_index(::P, ::A)
     @req actions(::P, ::S)
@@ -187,7 +189,7 @@ function action(policy::LocalApproximationValueIterationPolicy, s::S) where S
         # Similar to what is done above
         if policy.is_mdp_generative
             for j in 1:policy.n_generative_samples
-                sp, r = generate_sr(mdp, s, a, sol.rng)
+                sp, r = generate_sr(mdp, s, a, Base.GLOBAL_RNG)
                 sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
                 u += r + discount_factor*evaluate(policy.interp, sp_point)
             end
@@ -210,4 +212,31 @@ function action(policy::LocalApproximationValueIterationPolicy, s::S) where S
     end
 
     return policy.action_map[best_a_idx]
+end
+
+function action_value(policy::LocalApproximationValueIterationPolicy, s::S, a::A) where {S,A}
+
+    mdp = policy.mdp
+    discount_factor = discount(mdp)
+
+    u::Float64 = 0.0
+
+    if policy.is_mdp_generative
+        for j in 1:policy.n_generative_samples
+            sp, r = generate_sr(mdp, s, a, Base.GLOBAL_RNG)
+            sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
+            u += r + discount_factor*evaluate(policy.interp, sp_point)
+        end
+        u = u / policy.n_generative_samples
+    else
+        dist = transition(mdp,s,a)
+        for (sp, p) in weighted_iterator(dist)
+            p == 0.0 ? continue : nothing
+            r = reward(mdp, s, a, sp)
+            sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
+            u += p * (r + discount_factor*evaluate(policy.interp, sp_point))
+        end
+    end
+
+    return u
 end
