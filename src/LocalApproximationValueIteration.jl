@@ -18,7 +18,8 @@ export
     LocalApproximationValueIterationSolver,
     solve,
     action,
-    value
+    value,
+    action_value
 
 include("local_approximation_vi.jl")
     
