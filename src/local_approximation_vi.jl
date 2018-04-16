@@ -47,21 +47,28 @@ end
     @req n_actions(::P)
     @subreq ordered_actions(mdp)
 
-    # Have different requirements depending on whether solver MDP is generative or explicit
-    if solver.is_mdp_generative
-        @req generate_sr(::P, ::S, ::A, ::typeof(solver.rng))
-    else
-        @req transition(::P, ::S, ::A)
-        dist = transition(mdp, s, a)
-        D = typeof(dist)
-        @req iterator(::D)
-    end
-
     @req action_index(::P, ::A)
     @req actions(::P, ::S)
     as = actions(mdp)
     @req iterator(::typeof(as))
     a = first(iterator(as))
+
+    @req convert_s(::Type{S},::V where V <: AbstractVector{Float64},::P)
+    @req convert_s(::Type{V} where V <: AbstractVector{Float64},::S,::P)
+
+    # Have different requirements depending on whether solver MDP is generative or explicit
+    if solver.is_mdp_generative
+        @req generate_sr(::P, ::S, ::A, ::typeof(solver.rng))
+    else
+        @req transition(::P, ::S, ::A)
+        pts = get_all_interpolating_points(solver.interp)
+        @req iterator(::typeof(pts))
+        pt = first(iterator(pts))
+        ss = POMDPs.convert_s(S,pt,mdp)
+        dist = transition(mdp, ss, a)
+        D = typeof(dist)
+        @req iterator(::D)
+    end
     
 end
 
@@ -166,7 +173,7 @@ end
 
 function value(policy::LocalApproximationValueIterationPolicy, s::S) where S
 
-    # Again, assume that state-to-vector converter called by interpolator
+    # Call the conversion function on the state to get the corresponding vector
     s_point = POMDPs.convert_s(Vector{Float64}, s, policy.mdp)
     val = evaluate(policy.interp, s_point)
     return val
