@@ -1,4 +1,3 @@
-# The solver type
 mutable struct LocalApproximationValueIterationSolver{RNG<:AbstractRNG} <: Solver
     interp::LocalFunctionApproximator # Will be copied over by value to each policy
     max_iterations::Int64 # max number of iterations
@@ -7,7 +6,7 @@ mutable struct LocalApproximationValueIterationSolver{RNG<:AbstractRNG} <: Solve
     rng::RNG # Seed if req'd
     is_mdp_generative::Bool # Whether to treat underlying MDP model as generative
     n_generative_samples::Int64 # If underlying model generative, how many samples to use
-    terminal_costs_set::Bool
+    terminal_costs_set::Bool # The utility of terminal states has been set and should not be modified
 end
 
 # Default constructor
@@ -16,22 +15,22 @@ function LocalApproximationValueIterationSolver{RNG<:AbstractRNG}(interp::LocalF
                                                                   verbose::Bool=false, rng::RNG=Base.GLOBAL_RNG,
                                                                   is_mdp_generative::Bool=false, n_generative_samples::Int64=0,
                                                                   terminal_costs_set::Bool=false)
-    # TODO : Will this copy the interp object by reference?
     return LocalApproximationValueIterationSolver(interp,max_iterations, belres, verbose, rng, is_mdp_generative, n_generative_samples, terminal_costs_set)
 end
 
-# The policy type
-# NOTE : For now, we work directly with value function
-# And extract actions at the end from the interp object
+# NOTE : We work directly with the value function
+# And extract actions at the end by using the interpolation object
 mutable struct LocalApproximationValueIterationPolicy <: Policy
     interp::LocalFunctionApproximator # General approximator to be used in VI 
     action_map::Vector # Maps the action index to the concrete action type
-    mdp::Union{MDP,POMDP} # uses the model for indexing in the action function
-    is_mdp_generative::Bool
-    n_generative_samples::Int64
+    mdp::Union{MDP,POMDP} # Uses the model for indexing in the action function
+    is_mdp_generative::Bool # (Copied from solver.is_mdp_generative)
+    n_generative_samples::Int64 # (Copied from solver.n_generative_samples)
 end
 
-# Constructor with interpolator initialized
+# The policy can be created using the MDP and solver information
+# The policy's function approximation object (interp) is obtained by deep-copying over the 
+# solver's interp object. The other policy parameters are also obtained from the solver
 function LocalApproximationValueIterationPolicy(mdp::Union{MDP,POMDP},
                                                 solver::LocalApproximationValueIterationSolver)
     return LocalApproximationValueIterationPolicy(deepcopy(solver.interp),ordered_actions(mdp),mdp,solver.is_mdp_generative,solver.n_generative_samples)
@@ -82,7 +81,7 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
         @assert solver.n_generative_samples > 0
     end
 
-    # solver parameters
+    # Solver parameters
     max_iterations = solver.max_iterations
     belres = solver.belres
     discount_factor = discount(mdp)
@@ -94,11 +93,15 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
     iter_time::Float64 = 0.0
 
     # Get attributes of interpolator
+    # Since the policy object is created by the solver, it directly
+    # modifies the value of the interpolator of the created policy
     num_interps::Int = n_interpolants(policy.interp)
     interp_points::Vector = get_all_interpolating_points(policy.interp)
     interp_values::Vector = get_all_interpolating_values(policy.interp)
 
-    # Obtain the vector of states
+    # Obtain the vector of states by converting the corresponding
+    # vector of interpolation points/samples to the state type
+    # using the user-provided convert_s function
     S = state_type(typeof(mdp))
     interp_states = Vector{S}(num_interps)
     for (i,pt) in enumerate(interp_points)
@@ -106,15 +109,12 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
     end
 
     
-    # Main loop
+    # Outer loop for Value Iteration
     for i = 1 : max_iterations
         residual::Float64 = 0.0
         tic()
 
         for (istate,s) in enumerate(interp_states)
-            # NOTE : Assume that interpolator's state values can be directly
-            # used with T and R functions - the converters from state to vector 
-            # and vice versa are called inside the interpolator
             sub_aspace = actions(mdp,s)
 
             if isterminal(mdp, s)
@@ -129,7 +129,7 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
                     iaction = action_index(mdp,a)
                     u::Float64 = 0.0
 
-                    # Do bellman backup based on generative / explicit
+                    # Do bellman backup based on generative / explicit model
                     if solver.is_mdp_generative
                         # Generative Model
                         for j in 1:solver.n_generative_samples
@@ -159,8 +159,6 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
             end
         end #state
 
-        # TODO : interp_values directly edits the values in place
-        # Is that acceptable?
         iter_time = toq()
         total_time += iter_time
         solver.verbose ? @printf("[Iteration %-4d] residual: %10.3G | iteration runtime: %10.3f ms, (%10.3G s total)\n", i, residual, iter_time*1000.0, total_time) : nothing
@@ -174,6 +172,7 @@ end
 function value(policy::LocalApproximationValueIterationPolicy, s::S) where S
 
     # Call the conversion function on the state to get the corresponding vector
+    # That represents the point at which to interpolate the function
     s_point = POMDPs.convert_s(Vector{Float64}, s, policy.mdp)
     val = evaluate(policy.interp, s_point)
     return val
@@ -190,27 +189,9 @@ function action(policy::LocalApproximationValueIterationPolicy, s::S) where S
 
 
     for a in iterator(sub_aspace)
+        
         iaction = action_index(mdp, a)
-        u::Float64 = 0.0
-
-        # Similar to what is done above
-        if policy.is_mdp_generative
-            for j in 1:policy.n_generative_samples
-                sp, r = generate_sr(mdp, s, a, Base.GLOBAL_RNG)
-                sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
-                u += r + discount_factor*evaluate(policy.interp, sp_point)
-            end
-            u = u / policy.n_generative_samples
-        else
-            # Do for explicit
-            dist = transition(mdp,s,a)
-            for (sp, p) in weighted_iterator(dist)
-                p == 0.0 ? continue : nothing
-                r = reward(mdp, s, a, sp)
-                sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
-                u += p * (r + discount_factor*evaluate(policy.interp, sp_point))
-            end # next-states
-        end
+        u::Float64 = action_value(policy,s,a)
 
         if u > max_util
             max_util = u
@@ -221,6 +202,8 @@ function action(policy::LocalApproximationValueIterationPolicy, s::S) where S
     return policy.action_map[best_a_idx]
 end
 
+# Compute the action-value for some state-action pair
+# This is also used in the above function
 function action_value(policy::LocalApproximationValueIterationPolicy, s::S, a::A) where {S,A}
 
     mdp = policy.mdp
@@ -228,6 +211,8 @@ function action_value(policy::LocalApproximationValueIterationPolicy, s::S, a::A
 
     u::Float64 = 0.0
 
+    # As in solve(), do different things based on whether 
+    # mdp is generative or explicit
     if policy.is_mdp_generative
         for j in 1:policy.n_generative_samples
             sp, r = generate_sr(mdp, s, a, Base.GLOBAL_RNG)
