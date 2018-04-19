@@ -95,7 +95,7 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
     # Get attributes of interpolator
     # Since the policy object is created by the solver, it directly
     # modifies the value of the interpolator of the created policy
-    num_interps::Int = n_interpolants(policy.interp)
+    num_interps::Int = n_interpolating_points(policy.interp)
     interp_points::Vector = get_all_interpolating_points(policy.interp)
     interp_values::Vector = get_all_interpolating_values(policy.interp)
 
@@ -135,7 +135,7 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
                         for j in 1:solver.n_generative_samples
                             sp, r = generate_sr(mdp, s, a, solver.rng)
                             sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
-                            u += r + discount_factor*evaluate(policy.interp, sp_point)
+                            u += r + discount_factor*compute_value(policy.interp, sp_point)
                         end
                         u = u / solver.n_generative_samples
                     else
@@ -145,7 +145,7 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
                             p == 0.0 ? continue : nothing
                             r = reward(mdp, s, a, sp)
                             sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
-                            u += p * (r + discount_factor*evaluate(policy.interp, sp_point))
+                            u += p * (r + discount_factor*compute_value(policy.interp, sp_point))
                         end # next-states
                     end
                     
@@ -174,7 +174,7 @@ function value(policy::LocalApproximationValueIterationPolicy, s::S) where S
     # Call the conversion function on the state to get the corresponding vector
     # That represents the point at which to interpolate the function
     s_point = POMDPs.convert_s(Vector{Float64}, s, policy.mdp)
-    val = evaluate(policy.interp, s_point)
+    val = compute_value(policy.interp, s_point)
     return val
 end
 
@@ -217,7 +217,7 @@ function action_value(policy::LocalApproximationValueIterationPolicy, s::S, a::A
         for j in 1:policy.n_generative_samples
             sp, r = generate_sr(mdp, s, a, Base.GLOBAL_RNG)
             sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
-            u += r + discount_factor*evaluate(policy.interp, sp_point)
+            u += r + discount_factor*compute_value(policy.interp, sp_point)
         end
         u = u / policy.n_generative_samples
     else
@@ -226,7 +226,7 @@ function action_value(policy::LocalApproximationValueIterationPolicy, s::S, a::A
             p == 0.0 ? continue : nothing
             r = reward(mdp, s, a, sp)
             sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
-            u += p * (r + discount_factor*evaluate(policy.interp, sp_point))
+            u += p * (r + discount_factor*compute_value(policy.interp, sp_point))
         end
     end
 
