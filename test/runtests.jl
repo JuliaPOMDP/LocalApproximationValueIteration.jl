@@ -2,6 +2,7 @@ using POMDPModels
 using POMDPs
 using POMDPToolbox
 POMDPs.add("DiscreteValueIteration")
+using DiscreteValueIteration
 using GridInterpolations
 using LocalFunctionApproximation
 using LocalApproximationValueIteration
