@@ -12,7 +12,7 @@ function POMDPs.convert_s(::Type{V} where V <: AbstractVector{Float64}, s::GridW
 end
 
 function POMDPs.convert_s(::Type{GridWorldState}, v::AbstractVector{Float64}, mdp::GridWorld)
-    s = GridWorldState(convert(Int64,round(v[1])), convert(Int64, round(v[2])), convert(Bool, v[3]))
+    s = GridWorldState(round(Int64, v[1]), round(Int64, v[2]), convert(Bool, v[3]))
 end
 
 
