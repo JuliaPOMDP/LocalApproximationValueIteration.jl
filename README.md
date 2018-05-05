@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/JuliaPOMDP/LocalApproximationValueIteration.jl.svg?branch=master)](https://travis-ci.org/JuliaPOMDP/LocalApproximationValueIteration.jl)
+
 # LocalApproximationValueIteration
 
 This package implements the Local Approximation Value Iteration algorithm in Julia for solving
