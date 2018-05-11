@@ -70,6 +70,7 @@ the requirements of the solver accordingly (check [here](http://juliapomdp.githu
 constructed (Look at [GridInterpolations.jl](https://github.com/sisl/GridInterpolations.jl/blob/master/src/GridInterpolations.jl/) for more details about this).
 
 ```julia
+using POMDPs, POMDPModels
 using GridInterpolations
 using LocalFunctionApproximation
 using LocalApproximationValueIteration
