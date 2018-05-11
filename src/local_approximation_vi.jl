@@ -1,5 +1,5 @@
-mutable struct LocalApproximationValueIterationSolver{RNG<:AbstractRNG} <: Solver
-    interp::LocalFunctionApproximator # Will be copied over by value to each policy
+mutable struct LocalApproximationValueIterationSolver{I<:LocalFunctionApproximator, RNG<:AbstractRNG} <: Solver
+    interp::I # Will be copied over by value to each policy
     max_iterations::Int64 # max number of iterations
     belres::Float64 # the Bellman Residual
     verbose::Bool # Whether to print while solving or not
@@ -10,18 +10,24 @@ mutable struct LocalApproximationValueIterationSolver{RNG<:AbstractRNG} <: Solve
 end
 
 # Default constructor
-function LocalApproximationValueIterationSolver{RNG<:AbstractRNG}(interp::LocalFunctionApproximator;
-                                                                  max_iterations::Int64=100, belres::Float64=1e-3,
-                                                                  verbose::Bool=false, rng::RNG=Base.GLOBAL_RNG,
-                                                                  is_mdp_generative::Bool=false, n_generative_samples::Int64=0,
-                                                                  terminal_costs_set::Bool=false)
+function LocalApproximationValueIterationSolver{I<:LocalFunctionApproximator, RNG<:AbstractRNG}(interp::I;
+                                                                                                max_iterations::Int64=100, belres::Float64=1e-3,
+                                                                                                verbose::Bool=false, rng::RNG=Base.GLOBAL_RNG,
+                                                                                                is_mdp_generative::Bool=false, n_generative_samples::Int64=0,
+                                                                                                terminal_costs_set::Bool=false)
     return LocalApproximationValueIterationSolver(interp,max_iterations, belres, verbose, rng, is_mdp_generative, n_generative_samples, terminal_costs_set)
 end
 
+# Unparameterized constructor just for getting requirements
+function LocalApproximationValueIterationSolver()
+    throw(ArgumentError("LocalApproximationValueIterationSolver needs a LocalFunctionApproximator object for construction!"))
+end
+
+
 # NOTE : We work directly with the value function
 # And extract actions at the end by using the interpolation object
-mutable struct LocalApproximationValueIterationPolicy <: Policy
-    interp::LocalFunctionApproximator # General approximator to be used in VI 
+mutable struct LocalApproximationValueIterationPolicy{I<:LocalFunctionApproximator} <: Policy
+    interp::I # General approximator to be used in VI 
     action_map::Vector # Maps the action index to the concrete action type
     mdp::Union{MDP,POMDP} # Uses the model for indexing in the action function
     is_mdp_generative::Bool # (Copied from solver.is_mdp_generative)
