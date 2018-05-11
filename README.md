@@ -4,7 +4,7 @@
 # LocalApproximationValueIteration
 
 This package implements the Local Approximation Value Iteration algorithm in Julia for solving
-Markov Decision Processes (MDPs). Algorithmically it is very similar to the [DiscreteValueIteration](https://github.com/JuliaPOMDP/DiscreteValueIteration.jl) 
+Markov Decision Processes (MDPs). Algorithmically it is very similar to the [DiscreteValueIteration.jl](https://github.com/JuliaPOMDP/DiscreteValueIteration.jl) 
 package, but it represents the state space in a fundamentally different manner, as explained below.
 As with `DiscreteValueIteration`, the user should define the problem according to the API in
 [POMDPs.jl](https://github.com/JuliaPOMDP/POMDPs.jl). Examples of problem definitions can be found in
@@ -12,7 +12,12 @@ As with `DiscreteValueIteration`, the user should define the problem according t
 
 ## Installation
 
-To be updated once the repository has a final home
+Start Julia and run the following:
+
+```julia
+using POMDPs
+POMDPs.add("LocalApproximationValueIteration")
+```
 
 ## How it Works
 
@@ -25,9 +30,9 @@ are described in **Section 4.5.1** of the book [Decision Making Under Uncertaint
 
 ## State Space Representation
 
-For value function approximation, the solver depends on the [LocalFunctionApproximation](https://github.com/sisl/LocalFunctionApproximation.jl)
+For value function approximation, the solver depends on the [LocalFunctionApproximation.jl](https://github.com/sisl/LocalFunctionApproximation.jl)
 package. The `LocalApproximationValueIteration` solver must be
-initialized with an appropriate `LocalFunctionApproximation` object that approximates
+initialized with an appropriate `LocalFunctionApproximator` object that approximates
 the computed value function over the entire state space by either interpolation over a multi-dimensional grid discretization
 of the state space, or by k-nearest-neighbor averaging
 with a randomly drawn set of state space samples. The resulting policy uses this object to compute the action-value
@@ -58,30 +63,36 @@ end
 
 ## Usage
 
-TODO : Talk about requirements once it is part of `POMDPs.jl`.
+`POMDPs.jl` has a macro `@requirements_info` that determines the functions necessary to use some solver on some specific MDP model. As mentioned above, the
+`LocalApproximationValueIteration` solver depends on a `LocalFunctionApproximator` object and so that object must first be created to invoke
+the requirements of the solver accordingly (check [here](http://juliapomdp.github.io/POMDPs.jl/latest/requirements/) for more information). From our running example in `test/runtests_versus_discrete_vi.jl`, a function approximation object that uses grid interpolation 
+(`LocalGIFunctionApproximator`) is created, after the appropriate `RectangleGrid` is 
+constructed (Look at [GridInterpolations.jl](https://github.com/sisl/GridInterpolations.jl/blob/master/src/GridInterpolations.jl/) for more details about this).
 
-Note that the solver supports both explicit and generative transition models for the MDP (more on that [here](http://juliapomdp.github.io/POMDPs.jl/latest/def_pomdp/)).
+```julia
+using GridInterpolations
+using LocalFunctionApproximation
+using LocalApproximationValueIteration
+
+VERTICES_PER_AXIS = 10 # Controls the resolutions along the grid axis
+grid = RectangleGrid(linspace(1,100,VERTICES_PER_AXIS), linspace(1,100,VERTICES_PER_AXIS), [0.0, 1.0]) # Create the interpolating grid
+interp = LocalGIFunctionApproximator(grid)  # Create the local function approximator using the grid
+
+@requirements_info LocalApproximationValueIterationSolver(interp) GridWorld() # Check if the solver requirements are met
+```
+
+The user should modify the above steps depending on the kind of interpolation and the necessary parameters they want. We have delegated this step to the user
+as it is extremely problem and domain specific. Note that the solver supports both explicit and generative transition models for the MDP (more on that [here](http://juliapomdp.github.io/POMDPs.jl/latest/def_pomdp/)).
 The `.is_mdp_generative` and `.n_generative_samples` arguments of the `LocalApproximationValueIteration` solver should be set accordingly, and there are different
 `@requirements` depending on which kind of model the MDP has.
 
-Once all the necessary functions have been defined, the solver can be created. The example below is in `test/runtests_versus_discrete_vi.jl` and illustrates creating a solver
-with a multi-linear grid function approximator. A `GridWorld` MDP is defined with grid size 100 x 100 and appropriate reward states:
+Once all the necessary functions have been defined, the solver can be created.  A `GridWorld` MDP is defined with grid size 100 x 100 and appropriate reward states:
 
 ```julia
 mdp = GridWorld(sx=100, sy=100, rs=rstates, rv=rvect)
 ```
 
-Then, a function approximation object that uses grid interpolation (`LocalGIFunctionApproximation`) is created, after the appropriate `RectangleGrid` is 
-constructed (Look at [GridInterpolations.jl](https://github.com/sisl/GridInterpolations.jl/blob/master/src/GridInterpolations.jl/) for more details about this).
-
-```julia
-VERTICES_PER_AXIS = 10
-grid = RectangleGrid(linspace(1,100,VERTICES_PER_AXIS), linspace(1,100,VERTICES_PER_AXIS), [0.0, 1.0])
-interp = LocalGIFunctionApproximator(grid)
-```
-
-The user should modify the above steps depending on the kind of interpolation and the necessary parameters they want. We have delegated this step to the user
-as it is extremely problem and domain specific. Finally, the solver can be created using the function approximation object and other necessary parameters
+Finally, the solver can be created using the function approximation object and other necessary parameters
 (this model is explicit), and the MDP can be solved:
 
 ```julia
