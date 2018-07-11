@@ -140,8 +140,13 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
                         # Generative Model
                         for j in 1:solver.n_generative_samples
                             sp, r = generate_sr(mdp, s, a, solver.rng)
-                            sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
-                            u += r + discount_factor*compute_value(policy.interp, sp_point)
+                            u += r
+
+                            # Only interpolate sp if it is non-terminal
+                            if !isterminal(mdp,sp)
+                                sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
+                                u += discount_factor*compute_value(policy.interp, sp_point)
+                            end
                         end
                         u = u / solver.n_generative_samples
                     else
@@ -150,8 +155,13 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
                         for (sp, p) in weighted_iterator(dist)
                             p == 0.0 ? continue : nothing
                             r = reward(mdp, s, a, sp)
-                            sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
-                            u += p * (r + discount_factor*compute_value(policy.interp, sp_point))
+                            u += p*r
+
+                            # Only interpolate sp if it is non-terminal
+                            if !isterminal(mdp,sp)
+                                sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
+                                u += p * (discount_factor*compute_value(policy.interp, sp_point))
+                            end
                         end # next-states
                     end
                     
@@ -222,8 +232,13 @@ function action_value(policy::LocalApproximationValueIterationPolicy, s::S, a::A
     if policy.is_mdp_generative
         for j in 1:policy.n_generative_samples
             sp, r = generate_sr(mdp, s, a, Base.GLOBAL_RNG)
-            sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
-            u += r + discount_factor*compute_value(policy.interp, sp_point)
+            u += r
+
+            # Only interpolate sp if it is non-terminal
+            if !isterminal(mdp,sp)
+                sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
+                u += discount_factor*compute_value(policy.interp, sp_point)
+            end
         end
         u = u / policy.n_generative_samples
     else
@@ -231,8 +246,13 @@ function action_value(policy::LocalApproximationValueIterationPolicy, s::S, a::A
         for (sp, p) in weighted_iterator(dist)
             p == 0.0 ? continue : nothing
             r = reward(mdp, s, a, sp)
-            sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
-            u += p * (r + discount_factor*compute_value(policy.interp, sp_point))
+            u += p*r
+
+            # Only interpolate sp if it is non-terminal
+            if !isterminal(mdp,sp)
+                sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
+                u += p*(discount_factor*compute_value(policy.interp, sp_point))
+            end
         end
     end
 
