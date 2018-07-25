@@ -24,12 +24,13 @@ end
 
 # NOTE : We work directly with the value function
 # And extract actions at the end by using the interpolation object
-mutable struct LocalApproximationValueIterationPolicy{I<:LocalFunctionApproximator} <: Policy
+mutable struct LocalApproximationValueIterationPolicy{I<:LocalFunctionApproximator, RNG<:AbstractRNG} <: Policy
     interp::I # General approximator to be used in VI 
     action_map::Vector # Maps the action index to the concrete action type
     mdp::Union{MDP,POMDP} # Uses the model for indexing in the action function
     is_mdp_generative::Bool # (Copied from solver.is_mdp_generative)
     n_generative_samples::Int64 # (Copied from solver.n_generative_samples)
+    rng::RNG # (Copied from solver.rng)
 end
 
 # The policy can be created using the MDP and solver information
@@ -37,7 +38,8 @@ end
 # solver's interp object. The other policy parameters are also obtained from the solver
 function LocalApproximationValueIterationPolicy(mdp::Union{MDP,POMDP},
                                                 solver::LocalApproximationValueIterationSolver)
-    return LocalApproximationValueIterationPolicy(deepcopy(solver.interp),ordered_actions(mdp),mdp,solver.is_mdp_generative,solver.n_generative_samples)
+    return LocalApproximationValueIterationPolicy(deepcopy(solver.interp),ordered_actions(mdp),mdp,
+                                                  solver.is_mdp_generative,solver.n_generative_samples,solver.rng)
 end
 
 
@@ -227,14 +229,9 @@ function action_value(policy::LocalApproximationValueIterationPolicy, s::S, a::A
     # mdp is generative or explicit
     if policy.is_mdp_generative
         for j in 1:policy.n_generative_samples
-            sp, r = generate_sr(mdp, s, a, Base.GLOBAL_RNG)
-            u += r
-
-            # Only interpolate sp if it is non-terminal
-            if !isterminal(mdp,sp)
-                sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
-                u += discount_factor*compute_value(policy.interp, sp_point)
-            end
+            sp, r = generate_sr(mdp, s, a, policy.rng)
+            sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
+            u += r + discount_factor*compute_value(policy.interp, sp_point)
         end
         u = u / policy.n_generative_samples
     else
