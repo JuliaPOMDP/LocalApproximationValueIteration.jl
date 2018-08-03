@@ -6,16 +6,14 @@ mutable struct LocalApproximationValueIterationSolver{I<:LocalFunctionApproximat
     rng::RNG # Seed if req'd
     is_mdp_generative::Bool # Whether to treat underlying MDP model as generative
     n_generative_samples::Int64 # If underlying model generative, how many samples to use
-    terminal_costs_set::Bool # The utility of terminal states has been set and should not be modified
 end
 
 # Default constructor
 function LocalApproximationValueIterationSolver{I<:LocalFunctionApproximator, RNG<:AbstractRNG}(interp::I;
                                                                                                 max_iterations::Int64=100, belres::Float64=1e-3,
                                                                                                 verbose::Bool=false, rng::RNG=Base.GLOBAL_RNG,
-                                                                                                is_mdp_generative::Bool=false, n_generative_samples::Int64=0,
-                                                                                                terminal_costs_set::Bool=false)
-    return LocalApproximationValueIterationSolver(interp,max_iterations, belres, verbose, rng, is_mdp_generative, n_generative_samples, terminal_costs_set)
+                                                                                                is_mdp_generative::Bool=false, n_generative_samples::Int64=0)
+    return LocalApproximationValueIterationSolver(interp,max_iterations, belres, verbose, rng, is_mdp_generative, n_generative_samples)
 end
 
 # Unparameterized constructor just for getting requirements
@@ -126,9 +124,7 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
             sub_aspace = actions(mdp,s)
 
             if isterminal(mdp, s)
-                if !solver.terminal_costs_set
-                    interp_values[istate] = 0.0
-                end
+                interp_values[istate] = 0.0
             else
                 old_util = interp_values[istate]
                 max_util = -Inf
@@ -142,8 +138,13 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
                         # Generative Model
                         for j in 1:solver.n_generative_samples
                             sp, r = generate_sr(mdp, s, a, solver.rng)
-                            sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
-                            u += r + discount_factor*compute_value(policy.interp, sp_point)
+                            u += r
+
+                            # Only interpolate sp if it is non-terminal
+                            if !isterminal(mdp,sp)
+                                sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
+                                u += discount_factor*compute_value(policy.interp, sp_point)
+                            end
                         end
                         u = u / solver.n_generative_samples
                     else
@@ -152,8 +153,13 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
                         for (sp, p) in weighted_iterator(dist)
                             p == 0.0 ? continue : nothing
                             r = reward(mdp, s, a, sp)
-                            sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
-                            u += p * (r + discount_factor*compute_value(policy.interp, sp_point))
+                            u += p*r
+
+                            # Only interpolate sp if it is non-terminal
+                            if !isterminal(mdp,sp)
+                                sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
+                                u += p * (discount_factor*compute_value(policy.interp, sp_point))
+                            end
                         end # next-states
                     end
                     
@@ -233,8 +239,13 @@ function action_value(policy::LocalApproximationValueIterationPolicy, s::S, a::A
         for (sp, p) in weighted_iterator(dist)
             p == 0.0 ? continue : nothing
             r = reward(mdp, s, a, sp)
-            sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
-            u += p * (r + discount_factor*compute_value(policy.interp, sp_point))
+            u += p*r
+
+            # Only interpolate sp if it is non-terminal
+            if !isterminal(mdp,sp)
+                sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
+                u += p*(discount_factor*compute_value(policy.interp, sp_point))
+            end
         end
     end
 

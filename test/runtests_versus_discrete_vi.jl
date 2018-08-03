@@ -34,8 +34,7 @@ function test_against_full_grid()
 
     # Solve with discrete VI
     solver = ValueIterationSolver(max_iterations=1000)
-    policy = create_policy(solver, mdp)
-    policy = solve(solver, mdp, policy, verbose=true)
+    policy = solve(solver, mdp, verbose=true)
 
     # Setup grid with 0.1 resolution
     # As we increase VERTICES_PER_AXIS, the error should reduce
