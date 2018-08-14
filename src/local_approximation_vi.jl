@@ -9,10 +9,10 @@ mutable struct LocalApproximationValueIterationSolver{I<:LocalFunctionApproximat
 end
 
 # Default constructor
-function LocalApproximationValueIterationSolver{I<:LocalFunctionApproximator, RNG<:AbstractRNG}(interp::I;
-                                                                                                max_iterations::Int64=100, belres::Float64=1e-3,
-                                                                                                verbose::Bool=false, rng::RNG=Base.GLOBAL_RNG,
-                                                                                                is_mdp_generative::Bool=false, n_generative_samples::Int64=0)
+function LocalApproximationValueIterationSolver(interp::I;
+                                                max_iterations::Int64=100, belres::Float64=1e-3,
+                                                verbose::Bool=false, rng::RNG=Base.GLOBAL_RNG,
+                                                is_mdp_generative::Bool=false, n_generative_samples::Int64=0) where {I<:LocalFunctionApproximator, RNG<:AbstractRNG}
     return LocalApproximationValueIterationSolver(interp,max_iterations, belres, verbose, rng, is_mdp_generative, n_generative_samples)
 end
 
