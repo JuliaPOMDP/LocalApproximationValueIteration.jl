@@ -2,11 +2,10 @@
 This module implements Value Iteration for large/continuous state spaces by solving for some 
 subspace of the state space and interpolating the value function over the rest of the state space
 """
-__precompile__()
 module LocalApproximationValueIteration
 
 using POMDPs
-using POMDPToolbox
+using POMDPModelTools
 using LocalFunctionApproximation
 
 import POMDPs: Solver, solve, Policy, action, value
