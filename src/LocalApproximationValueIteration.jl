@@ -4,6 +4,8 @@ subspace of the state space and interpolating the value function over the rest o
 """
 module LocalApproximationValueIteration
 
+using Random
+using Printf
 using POMDPs
 using POMDPModelTools
 using LocalFunctionApproximation
