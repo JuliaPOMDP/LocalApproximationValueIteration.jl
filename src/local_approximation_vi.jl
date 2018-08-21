@@ -11,7 +11,7 @@ end
 # Default constructor
 function LocalApproximationValueIterationSolver(interp::I;
                                                 max_iterations::Int64=100, belres::Float64=1e-3,
-                                                verbose::Bool=false, rng::RNG=Base.GLOBAL_RNG,
+                                                verbose::Bool=false, rng::RNG=Random.GLOBAL_RNG,
                                                 is_mdp_generative::Bool=false, n_generative_samples::Int64=0) where {I<:LocalFunctionApproximator, RNG<:AbstractRNG}
     return LocalApproximationValueIterationSolver(interp,max_iterations, belres, verbose, rng, is_mdp_generative, n_generative_samples)
 end
@@ -46,8 +46,8 @@ end
 @POMDP_require solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,POMDP}) begin
     
     P = typeof(mdp)
-    S = state_type(P)
-    A = action_type(P)
+    S = statetype(P)
+    A = actiontype(P)
     @req discount(::P)
     @req n_actions(::P)
     @subreq ordered_actions(mdp)
@@ -55,8 +55,7 @@ end
     @req action_index(::P, ::A)
     @req actions(::P, ::S)
     as = actions(mdp)
-    @req iterator(::typeof(as))
-    a = first(iterator(as))
+    a = first(as)
 
     @req convert_s(::Type{S},::V where V <: AbstractVector{Float64},::P)
     @req convert_s(::Type{V} where V <: AbstractVector{Float64},::S,::P)
@@ -67,12 +66,11 @@ end
     else
         @req transition(::P, ::S, ::A)
         pts = get_all_interpolating_points(solver.interp)
-        @req iterator(::typeof(pts))
-        pt = first(iterator(pts))
+        pt = first(pts)
         ss = POMDPs.convert_s(S,pt,mdp)
         dist = transition(mdp, ss, a)
         D = typeof(dist)
-        @req iterator(::D)
+        @req support(::D)
     end
     
 end
@@ -108,17 +106,16 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
     # Obtain the vector of states by converting the corresponding
     # vector of interpolation points/samples to the state type
     # using the user-provided convert_s function
-    S = state_type(typeof(mdp))
-    interp_states = Vector{S}(num_interps)
+    S = statetype(typeof(mdp))
+    interp_states = Vector{S}(undef, num_interps)
     for (i,pt) in enumerate(interp_points)
         interp_states[i] = POMDPs.convert_s(S, pt, mdp)
     end
-
     
     # Outer loop for Value Iteration
     for i = 1 : max_iterations
         residual::Float64 = 0.0
-        tic()
+        iter_time = @elapsed begin
 
         for (istate,s) in enumerate(interp_states)
             sub_aspace = actions(mdp,s)
@@ -129,7 +126,7 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
                 old_util = interp_values[istate]
                 max_util = -Inf
 
-                for a in iterator(sub_aspace)
+                for a in sub_aspace
                     iaction = action_index(mdp,a)
                     u::Float64 = 0.0
 
@@ -173,7 +170,7 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
             end
         end #state
 
-        iter_time = toq()
+        end #time
         total_time += iter_time
         solver.verbose ? @printf("[Iteration %-4d] residual: %10.3G | iteration runtime: %10.3f ms, (%10.3G s total)\n", i, residual, iter_time*1000.0, total_time) : nothing
         residual < belres ? break : nothing

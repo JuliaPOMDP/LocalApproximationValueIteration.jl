@@ -20,8 +20,8 @@ end
 function test_against_full_grid()
 
     # Generate reward states and set to reward 10.0
-    rstates = Vector{GridWorldState}()
-    rvect = Vector{Float64}()
+    rstates = Vector{GridWorldState}(undef,0)
+    rvect = Vector{Float64}(undef,0)
     for x = 40:60
         for y = 40:60
             push!(rstates,GridWorldState(x,y))
@@ -39,7 +39,7 @@ function test_against_full_grid()
     # Setup grid with 0.1 resolution
     # As we increase VERTICES_PER_AXIS, the error should reduce
     VERTICES_PER_AXIS = 10
-    grid = RectangleGrid(linspace(1,100,VERTICES_PER_AXIS), linspace(1,100,VERTICES_PER_AXIS), [0.0, 1.0])
+    grid = RectangleGrid(range(1,step=VERTICES_PER_AXIS,stop=100), range(1,step=VERTICES_PER_AXIS,stop=100), [0.0, 1.0])
     interp = LocalGIFunctionApproximator(grid)
 
     approx_solver = LocalApproximationValueIterationSolver(interp, verbose=true, max_iterations = 1000)
@@ -48,9 +48,7 @@ function test_against_full_grid()
 
     # Randomly sample 1000 states and compute their value function match
     total_err = 0.0
-    full_states = ordered_states(mdp)
-    for i = 1:10000
-        state = full_states[i]
+    for state in states(mdp)
         full_val = value(policy,state)
         approx_val = value(approx_policy,state)
         total_err += abs(full_val-approx_val)
