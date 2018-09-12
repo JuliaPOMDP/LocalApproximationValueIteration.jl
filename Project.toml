@@ -12,6 +12,7 @@ POMDPModels = "355abbd5-f08e-5560-ac9e-8b5f2592a0ca"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 GridInterpolations = "bb4c363b-b914-514b-8517-4eb369bc008a"
+DiscreteValueIteration = "4b033969-44f6-5439-a48b-c11fa3648068"
 
 [targets]
-test = ["StaticArrays", "GridInterpolations", "POMDPModels", "Test"]
+test = ["DiscreteValueIteration", "StaticArrays", "GridInterpolations", "POMDPModels", "Test"]
