@@ -1,0 +1,17 @@
+name = "LocalApproximationValueIteration"
+uuid = "a40420fb-f401-52da-a663-f502e5b95060"
+repo = "https://github.com/JuliaPOMDP/LocalApproximationValueIteration.jl"
+version = "0.2.0"
+
+[deps]
+POMDPs = "a93abf59-7444-517b-a68a-c42f96afdd7d"
+POMDPModelTools = "08074719-1b2a-587c-a292-00f91cc44415"
+
+[extras]
+POMDPModels = "355abbd5-f08e-5560-ac9e-8b5f2592a0ca"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+GridInterpolations = "bb4c363b-b914-514b-8517-4eb369bc008a"
+
+[targets]
+test = ["StaticArrays", "GridInterpolations", "POMDPModels", "Test"]
