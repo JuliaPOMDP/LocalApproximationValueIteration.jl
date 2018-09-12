@@ -3,7 +3,6 @@ using POMDPs
 using POMDPModelTools
 using StaticArrays
 using Random
-POMDPs.add("DiscreteValueIteration")
 using DiscreteValueIteration
 using GridInterpolations
 using LocalFunctionApproximation
