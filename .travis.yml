@@ -4,13 +4,14 @@ os:
   - linux
   - osx
 julia:
-  - 0.6
+  - 0.7
+  - 1.0
 notifications:
   email: false
 
-script:
-  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-  - julia -e 'Pkg.clone(pwd()); Pkg.build("LocalApproximationValueIteration"); Pkg.test("LocalApproximationValueIteration"; coverage=true)'
+# script:
+#   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
+#   - julia -e 'Pkg.clone(pwd()); Pkg.build("LocalApproximationValueIteration"); Pkg.test("LocalApproximationValueIteration"; coverage=true)'
 after_success:
   # push coverage results to Coveralls
   - julia -e 'cd(Pkg.dir("LocalApproximationValueIteration")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
