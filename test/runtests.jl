@@ -1,13 +1,13 @@
 using POMDPModels
 using POMDPs
-using POMDPToolbox
-POMDPs.add("DiscreteValueIteration")
+using POMDPModelTools
+using StaticArrays
+using Random
 using DiscreteValueIteration
 using GridInterpolations
 using LocalFunctionApproximation
 using LocalApproximationValueIteration
-using Base.Test
-using StaticArrays
+using Test
 
 # write your own tests here
 include("runtests_versus_discrete_vi.jl")
