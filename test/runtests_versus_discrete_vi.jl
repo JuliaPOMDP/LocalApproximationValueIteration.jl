@@ -6,12 +6,12 @@ Then randomly sample several points on full grid and compare
 =#
 
 # State conversion functions
-function POMDPs.convert_s(::Type{V} where V <: AbstractVector{Float64}, s::GridWorldState, mdp::GridWorld)
+function POMDPs.convert_s(::Type{V} where V <: AbstractVector{Float64}, s::GridWorldState, mdp::LegacyGridWorld)
     v = SVector{3,Float64}(s.x, s.y, convert(Float64,s.done))
     return v
 end
 
-function POMDPs.convert_s(::Type{GridWorldState}, v::AbstractVector{Float64}, mdp::GridWorld)
+function POMDPs.convert_s(::Type{GridWorldState}, v::AbstractVector{Float64}, mdp::LegacyGridWorld)
     s = GridWorldState(round(Int64, v[1]), round(Int64, v[2]), convert(Bool, v[3]))
 end
 
@@ -30,7 +30,7 @@ function test_against_full_grid()
     end
 
     # Create full MDP - to be used by both!
-    mdp = GridWorld(sx=100, sy=100, rs=rstates, rv=rvect)
+    mdp = LegacyGridWorld(sx=100, sy=100, rs=rstates, rv=rvect)
 
     # Solve with discrete VI
     solver = ValueIterationSolver(max_iterations=1000)
