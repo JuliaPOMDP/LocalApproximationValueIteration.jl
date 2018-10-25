@@ -48,7 +48,7 @@ convert_s(::Type{V} where V <: AbstractVector{Float64},::S,::P)
 ```
 
 The user is required to implement the above two functions for the `State` type of their MDP problem model. An example of this
-is shown in `test/runtests_versus_discrete_vi.jl` for the [GridWorld](https://github.com/JuliaPOMDP/POMDPModels.jl/blob/master/src/GridWorlds.jl) model:
+is shown in `test/runtests_versus_discrete_vi.jl` for the [GridWorld](https://github.com/JuliaPOMDP/POMDPModels.jl/blob/master/src/gridworld.jl) model:
 
 ```julia
 function POMDPs.convert_s(::Type{V} where V <: AbstractVector{Float64}, s::GridWorldState, mdp::GridWorld)
@@ -65,7 +65,7 @@ end
 
 `POMDPs.jl` has a macro `@requirements_info` that determines the functions necessary to use some solver on some specific MDP model. As mentioned above, the
 `LocalApproximationValueIteration` solver depends on a `LocalFunctionApproximator` object and so that object must first be created to invoke
-the requirements of the solver accordingly (check [here](http://juliapomdp.github.io/POMDPs.jl/latest/requirements/) for more information). From our running example in `test/runtests_versus_discrete_vi.jl`, a function approximation object that uses grid interpolation 
+the requirements of the solver accordingly (check [here](http://juliapomdp.github.io/POMDPs.jl/latest/requirements) for more information). From our running example in `test/runtests_versus_discrete_vi.jl`, a function approximation object that uses grid interpolation 
 (`LocalGIFunctionApproximator`) is created, after the appropriate `RectangleGrid` is 
 constructed (Look at [GridInterpolations.jl](https://github.com/sisl/GridInterpolations.jl/blob/master/src/GridInterpolations.jl/) for more details about this).
 
@@ -83,7 +83,7 @@ interp = LocalGIFunctionApproximator(grid)  # Create the local function approxim
 ```
 
 The user should modify the above steps depending on the kind of interpolation and the necessary parameters they want. We have delegated this step to the user
-as it is extremely problem and domain specific. Note that the solver supports both explicit and generative transition models for the MDP (more on that [here](http://juliapomdp.github.io/POMDPs.jl/latest/def_pomdp/)).
+as it is extremely problem and domain specific. Note that the solver supports both explicit and generative transition models for the MDP (more on that [here](http://juliapomdp.github.io/POMDPs.jl/latest/def_pomdp)).
 The `.is_mdp_generative` and `.n_generative_samples` arguments of the `LocalApproximationValueIteration` solver should be set accordingly, and there are different
 `@requirements` depending on which kind of model the MDP has.
 
