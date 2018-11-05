@@ -52,7 +52,7 @@ end
     @req n_actions(::P)
     @subreq ordered_actions(mdp)
 
-    @req action_index(::P, ::A)
+    @req actionindex(::P, ::A)
     @req actions(::P, ::S)
     as = actions(mdp)
     a = first(as)
@@ -127,7 +127,7 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
                 max_util = -Inf
 
                 for a in sub_aspace
-                    iaction = action_index(mdp,a)
+                    iaction = actionindex(mdp,a)
                     u::Float64 = 0.0
 
                     # Do bellman backup based on generative / explicit model
@@ -201,7 +201,7 @@ function action(policy::LocalApproximationValueIterationPolicy, s::S) where S
 
     for a in iterator(sub_aspace)
         
-        iaction = action_index(mdp, a)
+        iaction = actionindex(mdp, a)
         u::Float64 = action_value(policy,s,a)
 
         if u > max_util
