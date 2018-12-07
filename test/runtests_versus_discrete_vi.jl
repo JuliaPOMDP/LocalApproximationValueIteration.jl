@@ -33,8 +33,8 @@ function test_against_full_grid()
     mdp = LegacyGridWorld(sx=100, sy=100, rs=rstates, rv=rvect)
 
     # Solve with discrete VI
-    solver = ValueIterationSolver(max_iterations=1000)
-    policy = solve(solver, mdp, verbose=true)
+    solver = ValueIterationSolver(max_iterations=1000, verbose=true)
+    policy = solve(solver, mdp)
 
     # Setup grid with 0.1 resolution
     # As we increase VERTICES_PER_AXIS, the error should reduce
