@@ -199,7 +199,7 @@ function action(policy::LocalApproximationValueIterationPolicy, s::S) where S
     discount_factor = discount(mdp)
 
 
-    for a in iterator(sub_aspace)
+    for a in sub_aspace
         
         iaction = actionindex(mdp, a)
         u::Float64 = action_value(policy,s,a)
