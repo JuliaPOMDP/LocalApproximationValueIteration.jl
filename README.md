@@ -12,11 +12,11 @@ As with `DiscreteValueIteration`, the user should define the problem according t
 
 ## Installation
 
-Start Julia and run the following:
-
+You need to have [POMDPs.jl](https://github.com/JuliaPOMDP/POMDPs.jl) already and the registry added (see its README).
+Thereafter, you can add LocalApproximationValueIteration from package manager mode in the Julia REPL
 ```julia
-using POMDPs
-POMDPs.add("LocalApproximationValueIteration")
+using Pkg
+Pkg.add("LocalApproximationValueIteration")
 ```
 
 ## How it Works
@@ -48,7 +48,8 @@ convert_s(::Type{V} where V <: AbstractVector{Float64},::S,::P)
 ```
 
 The user is required to implement the above two functions for the `State` type of their MDP problem model. An example of this
-is shown in `test/runtests_versus_discrete_vi.jl` for the [GridWorld](https://github.com/JuliaPOMDP/POMDPModels.jl/blob/master/src/gridworld.jl) model:
+is shown in `test/runtests_versus_discrete_vi.jl` for the [GridWorld](https://github.com/JuliaPOMDP/POMDPModels.jl/blob/master/src/gridworld.jl) model.
+:
 
 ```julia
 function POMDPs.convert_s(::Type{V} where V <: AbstractVector{Float64}, s::GridWorldState, mdp::GridWorld)
@@ -60,6 +61,7 @@ function POMDPs.convert_s(::Type{GridWorldState}, v::AbstractVector{Float64}, md
     s = GridWorldState(round(Int64, v[1]), round(Int64, v[2]), convert(Bool, v[3]))
 end
 ```
+Note that `SVector` must be imported through [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl)
 
 ## Usage
 
@@ -104,6 +106,6 @@ approx_policy = solve(approx_solver, mdp)
 The API for querying the final policy object is identical to `DiscreteValueIteration`, i.e. the `action` and `value` functions can be called for the solved MDP:
 
 ```julia
-v = value(policy, s)  # returns the approximately optimal value for state s
-a = action(policy, s) # returns the approximately optimal action for state s
+v = value(approx_policy, s)  # returns the approximately optimal value for state s
+a = action(approx_policy, s) # returns the approximately optimal action for state s
 ```
