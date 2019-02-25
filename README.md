@@ -78,7 +78,7 @@ using LocalFunctionApproximation
 using LocalApproximationValueIteration
 
 VERTICES_PER_AXIS = 10 # Controls the resolutions along the grid axis
-grid = RectangleGrid(linspace(1,100,VERTICES_PER_AXIS), linspace(1,100,VERTICES_PER_AXIS), [0.0, 1.0]) # Create the interpolating grid
+grid = RectangleGrid(range(1, stop=100, length=VERTICES_PER_AXIS), range(1, stop=100, length=VERTICES_PER_AXIS), [0.0, 1.0]) # Create the interpolating grid
 interp = LocalGIFunctionApproximator(grid)  # Create the local function approximator using the grid
 
 @requirements_info LocalApproximationValueIterationSolver(interp) GridWorld() # Check if the solver requirements are met
