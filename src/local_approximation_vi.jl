@@ -76,7 +76,7 @@ end
 end
 
 
-function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,POMDP})
+function POMDPs.solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,POMDP})
 
     @warn_requirements solve(solver,mdp)
 
@@ -180,7 +180,7 @@ function solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,PO
 end
 
 
-function value(policy::LocalApproximationValueIterationPolicy, s::S) where S
+function POMDPs.value(policy::LocalApproximationValueIterationPolicy, s::S) where S
 
     # Call the conversion function on the state to get the corresponding vector
     # That represents the point at which to interpolate the function
@@ -190,7 +190,7 @@ function value(policy::LocalApproximationValueIterationPolicy, s::S) where S
 end
 
 # Not explicitly stored in policy - extract from value function interpolation
-function action(policy::LocalApproximationValueIterationPolicy, s::S) where S
+function POMDPs.action(policy::LocalApproximationValueIterationPolicy, s::S) where S
     
     mdp = policy.mdp
     best_a_idx = -1
@@ -215,7 +215,7 @@ end
 
 # Compute the action-value for some state-action pair
 # This is also used in the above function
-function action_value(policy::LocalApproximationValueIterationPolicy, s::S, a::A) where {S,A}
+function POMDPs.value(policy::LocalApproximationValueIterationPolicy, s::S, a::A) where {S,A}
 
     mdp = policy.mdp
     discount_factor = discount(mdp)

@@ -16,11 +16,7 @@ import POMDPs: Solver, solve, Policy, action, value
 # Exports related to solver
 export
     LocalApproximationValueIterationPolicy,
-    LocalApproximationValueIterationSolver,
-    solve,
-    action,
-    value,
-    action_value
+    LocalApproximationValueIterationSolver
 
 include("local_approximation_vi.jl")
     
