@@ -57,8 +57,8 @@ end
     as = actions(mdp)
     a = first(as)
 
-    @req convert_s(::Type{S},::V where V <: AbstractVector{Float64},::P)
-    @req convert_s(::Type{V} where V <: AbstractVector{Float64},::S,::P)
+    @req convert_s(::Type{S}, ::AbstractVector{Float64}, ::P)
+    @req convert_s(::Type{Vector{Float64}}, ::S, ::P)
 
     # Have different requirements depending on whether solver MDP is generative or explicit
     if solver.is_mdp_generative
@@ -67,7 +67,7 @@ end
         @req transition(::P, ::S, ::A)
         pts = get_all_interpolating_points(solver.interp)
         pt = first(pts)
-        ss = POMDPs.convert_s(S,pt,mdp)
+        ss = POMDPs.convert_s(S, pt, mdp)
         dist = transition(mdp, ss, a)
         D = typeof(dist)
         @req support(::D)
@@ -78,7 +78,7 @@ end
 
 function POMDPs.solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,POMDP})
 
-    @warn_requirements solve(solver,mdp)
+    @warn_requirements solve(solver, mdp)
 
     # Ensure that generative model has a non-zero number of samples
     if solver.is_mdp_generative
@@ -93,22 +93,22 @@ function POMDPs.solve(solver::LocalApproximationValueIterationSolver, mdp::Union
     # Initialize the policy
     policy = LocalApproximationValueIterationPolicy(mdp,solver)
 
-    total_time::Float64 = 0.0
-    iter_time::Float64 = 0.0
+    total_time = 0.0
+    iter_time = 0.0
 
     # Get attributes of interpolator
     # Since the policy object is created by the solver, it directly
     # modifies the value of the interpolator of the created policy
-    num_interps::Int = n_interpolating_points(policy.interp)
-    interp_points::Vector = get_all_interpolating_points(policy.interp)
-    interp_values::Vector = get_all_interpolating_values(policy.interp)
+    num_interps = n_interpolating_points(policy.interp)
+    interp_points = get_all_interpolating_points(policy.interp)
+    interp_values = get_all_interpolating_values(policy.interp)
 
     # Obtain the vector of states by converting the corresponding
     # vector of interpolation points/samples to the state type
     # using the user-provided convert_s function
     S = statetype(typeof(mdp))
     interp_states = Vector{S}(undef, num_interps)
-    for (i,pt) in enumerate(interp_points)
+    for (i, pt) in enumerate(interp_points)
         interp_states[i] = POMDPs.convert_s(S, pt, mdp)
     end
     
@@ -118,7 +118,7 @@ function POMDPs.solve(solver::LocalApproximationValueIterationSolver, mdp::Union
         iter_time = @elapsed begin
 
         for (istate,s) in enumerate(interp_states)
-            sub_aspace = actions(mdp,s)
+            sub_aspace = actions(mdp, s)
 
             if isterminal(mdp, s)
                 interp_values[istate] = 0.0
@@ -127,7 +127,7 @@ function POMDPs.solve(solver::LocalApproximationValueIterationSolver, mdp::Union
                 max_util = -Inf
 
                 for a in sub_aspace
-                    iaction = actionindex(mdp,a)
+                    iaction = actionindex(mdp, a)
                     u::Float64 = 0.0
 
                     # Do bellman backup based on generative / explicit model
@@ -146,14 +146,14 @@ function POMDPs.solve(solver::LocalApproximationValueIterationSolver, mdp::Union
                         u = u / solver.n_generative_samples
                     else
                         # Explicit Model
-                        dist = transition(mdp,s,a)
+                        dist = transition(mdp, s, a)
                         for (sp, p) in weighted_iterator(dist)
                             p == 0.0 ? continue : nothing
                             r = reward(mdp, s, a, sp)
                             u += p*r
 
                             # Only interpolate sp if it is non-terminal
-                            if !isterminal(mdp,sp)
+                            if !isterminal(mdp, sp)
                                 sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
                                 u += p * (discount_factor*compute_value(policy.interp, sp_point))
                             end
@@ -195,14 +195,14 @@ function POMDPs.action(policy::LocalApproximationValueIterationPolicy, s::S) whe
     mdp = policy.mdp
     best_a_idx = -1
     max_util = -Inf
-    sub_aspace = actions(mdp,s)
+    sub_aspace = actions(mdp, s)
     discount_factor = discount(mdp)
 
 
     for a in sub_aspace
         
         iaction = actionindex(mdp, a)
-        u::Float64 = action_value(policy,s,a)
+        u::Float64 = value(policy, s, a)
 
         if u > max_util
             max_util = u
@@ -232,14 +232,14 @@ function POMDPs.value(policy::LocalApproximationValueIterationPolicy, s::S, a::A
         end
         u = u / policy.n_generative_samples
     else
-        dist = transition(mdp,s,a)
+        dist = transition(mdp, s, a)
         for (sp, p) in weighted_iterator(dist)
             p == 0.0 ? continue : nothing
             r = reward(mdp, s, a, sp)
             u += p*r
 
             # Only interpolate sp if it is non-terminal
-            if !isterminal(mdp,sp)
+            if !isterminal(mdp, sp)
                 sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
                 u += p*(discount_factor*compute_value(policy.interp, sp_point))
             end
