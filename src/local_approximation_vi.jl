@@ -49,7 +49,6 @@ end
     S = statetype(P)
     A = actiontype(P)
     @req discount(::P)
-    @req n_actions(::P)
     @subreq ordered_actions(mdp)
 
     @req actionindex(::P, ::A)
@@ -134,7 +133,7 @@ function POMDPs.solve(solver::LocalApproximationValueIterationSolver, mdp::Union
                     if solver.is_mdp_generative
                         # Generative Model
                         for j in 1:solver.n_generative_samples
-                            sp, r = generate_sr(mdp, s, a, solver.rng)
+                            sp, r = gen(DDNOut(:sp,:r), mdp, s, a, solver.rng)
                             u += r
 
                             # Only interpolate sp if it is non-terminal
@@ -226,7 +225,7 @@ function POMDPs.value(policy::LocalApproximationValueIterationPolicy, s::S, a::A
     # mdp is generative or explicit
     if policy.is_mdp_generative
         for j in 1:policy.n_generative_samples
-            sp, r = generate_sr(mdp, s, a, policy.rng)
+            sp, r = gen(DDNOut(:sp,:r), mdp, s, a, policy.rng)
             sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
             u += r + discount_factor*compute_value(policy.interp, sp_point)
         end
