@@ -1,7 +1,7 @@
 name = "LocalApproximationValueIteration"
 uuid = "a40420fb-f401-52da-a663-f502e5b95060"
 repo = "https://github.com/JuliaPOMDP/LocalApproximationValueIteration.jl"
-version = "0.3.0"
+version = "0.4.0"
 
 [deps]
 LocalFunctionApproximation = "db97f5ab-fc25-52dd-a8f9-02a257c35074"
@@ -9,6 +9,10 @@ POMDPModelTools = "08074719-1b2a-587c-a292-00f91cc44415"
 POMDPs = "a93abf59-7444-517b-a68a-c42f96afdd7d"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+
+[compat]
+POMDPs = "0.7.3, 0.8"
+julia = "1"
 
 [extras]
 DiscreteValueIteration = "4b033969-44f6-5439-a48b-c11fa3648068"
