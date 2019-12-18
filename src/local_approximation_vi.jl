@@ -61,7 +61,7 @@ end
 
     # Have different requirements depending on whether solver MDP is generative or explicit
     if solver.is_mdp_generative
-        @req generate_sr(::P, ::S, ::A, ::typeof(solver.rng))
+        @req gen(::DDNOut{(:sp, :r)}, ::P, ::S, ::A, ::typeof(solver.rng))
     else
         @req transition(::P, ::S, ::A)
         pts = get_all_interpolating_points(solver.interp)
@@ -126,7 +126,6 @@ function POMDPs.solve(solver::LocalApproximationValueIterationSolver, mdp::Union
                 max_util = -Inf
 
                 for a in sub_aspace
-                    iaction = actionindex(mdp, a)
                     u::Float64 = 0.0
 
                     # Do bellman backup based on generative / explicit model
