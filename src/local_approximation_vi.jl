@@ -61,7 +61,7 @@ end
 
     # Have different requirements depending on whether solver MDP is generative or explicit
     if solver.is_mdp_generative
-        @req generate_sr(::P, ::S, ::A, ::typeof(solver.rng))
+        @req gen(::P, ::S, ::A, ::typeof(solver.rng))
     else
         @req transition(::P, ::S, ::A)
         pts = get_all_interpolating_points(solver.interp)
@@ -133,7 +133,7 @@ function POMDPs.solve(solver::LocalApproximationValueIterationSolver, mdp::Union
                     if solver.is_mdp_generative
                         # Generative Model
                         for j in 1:solver.n_generative_samples
-                            sp, r = gen(DDNOut(:sp,:r), mdp, s, a, solver.rng)
+                            sp, r = @gen(:sp,:r)(mdp, s, a, solver.rng)
                             u += r
 
                             # Only interpolate sp if it is non-terminal
@@ -225,7 +225,7 @@ function POMDPs.value(policy::LocalApproximationValueIterationPolicy, s::S, a::A
     # mdp is generative or explicit
     if policy.is_mdp_generative
         for j in 1:policy.n_generative_samples
-            sp, r = gen(DDNOut(:sp,:r), mdp, s, a, policy.rng)
+            sp, r = @gen(:sp,:r)(mdp, s, a, policy.rng)
             sp_point = POMDPs.convert_s(Vector{Float64}, sp, mdp)
             u += r + discount_factor*compute_value(policy.interp, sp_point)
         end
