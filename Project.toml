@@ -1,7 +1,7 @@
 name = "LocalApproximationValueIteration"
 uuid = "a40420fb-f401-52da-a663-f502e5b95060"
 repo = "https://github.com/JuliaPOMDP/LocalApproximationValueIteration.jl"
-version = "0.4.1"
+version = "0.4.2"
 
 [deps]
 LocalFunctionApproximation = "db97f5ab-fc25-52dd-a8f9-02a257c35074"
