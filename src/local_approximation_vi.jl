@@ -14,7 +14,7 @@ function LocalApproximationValueIterationSolver(interp::I;
                                                 verbose::Bool=false, rng::RNG=Random.GLOBAL_RNG,
                                                 is_mdp_generative::Bool=false, n_generative_samples::Int64=0) where {I<:LocalFunctionApproximator, RNG<:AbstractRNG}
     if is_mdp_generative && n_generative_samples == 0
-        @warn "Since the MDP is generative, setting `n_generative_samples` to 1."
+        @warn "Since the MDP is generative, but `n_generative_samples` was not provided (default 0), setting `n_generative_samples` to 1."
         n_generative_samples = 1
     end
     return LocalApproximationValueIterationSolver(interp,max_iterations, belres, verbose, rng, is_mdp_generative, n_generative_samples)
