@@ -7,7 +7,7 @@ module LocalApproximationValueIteration
 using Random
 using Printf
 using POMDPs
-using POMDPModelTools
+using POMDPTools
 using LocalFunctionApproximation
 using POMDPLinter: @POMDP_require, @req, @subreq, @warn_requirements
 
