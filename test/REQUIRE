@@ -1,6 +1,6 @@
 POMDPModels
 POMDPs
-POMDPModelTools
+POMDPTools
 GridInterpolations
 LocalFunctionApproximation
 StaticArrays
