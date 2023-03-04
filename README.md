@@ -39,37 +39,18 @@ with a randomly drawn set of state space samples. The resulting policy uses this
 function or the best action for any arbitrary state query.
 
 A key operational requirement that the solver has from the MDP is that any state can be represented via an equivalent
-real-valued vector. This is enforced by the two `convert_s` function requirements that convert an instance of
-the MDP State type to a real-valued vector and vice versa. The signatures for these methods are:
+real-valued vector. This is enforced by the two [`convert_s`](https://juliapomdp.github.io/POMDPs.jl/stable/api/#POMDPs.convert_s) function requirements that convert an instance of
+the MDP State type to a real-valued vector and vice versa. 
 
-```julia
-convert_s(::Type{S},::V where V <: AbstractVector{Float64},::P)
-convert_s(::Type{V} where V <: AbstractVector{Float64},::S,::P)
-```
-
-The user is required to implement the above two functions for the `State` type of their MDP problem model. An example of this
-is shown in `test/runtests_versus_discrete_vi.jl` for the [GridWorld](https://github.com/JuliaPOMDP/POMDPModels.jl/blob/master/src/gridworld.jl) model.
-:
-
-```julia
-function POMDPs.convert_s(::Type{V} where V <: AbstractVector{Float64}, s::GridWorldState, mdp::GridWorld)
-    v = SVector{3,Float64}(s.x, s.y, convert(Float64,s.done))
-    return v
-end
-
-function POMDPs.convert_s(::Type{GridWorldState}, v::AbstractVector{Float64}, mdp::GridWorld)
-    s = GridWorldState(round(Int64, v[1]), round(Int64, v[2]), convert(Bool, v[3]))
-end
-```
-Note that `SVector` must be imported through [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl)
+The user is required to implement the above two functions for the `State` type of their MDP problem model. 
 
 ## Usage
 
-`POMDPs.jl` has a macro `@requirements_info` that determines the functions necessary to use some solver on some specific MDP model. As mentioned above, the
+[`POMDPLinter.jl`](https://github.com/JuliaPOMDP/POMDPLinter.jl) has a macro [`@show_requirements`](https://juliapomdp.github.io/POMDPLinter.jl/stable/requirements/#POMDPLinter.@show_requirements) that determines the functions necessary to use some solver on some specific MDP model. As mentioned above, the
 `LocalApproximationValueIteration` solver depends on a `LocalFunctionApproximator` object and so that object must first be created to invoke
-the requirements of the solver accordingly (check [here](http://juliapomdp.github.io/POMDPs.jl/latest/requirements) for more information). From our running example in `test/runtests_versus_discrete_vi.jl`, a function approximation object that uses grid interpolation 
+the requirements of the solver accordingly. From our running example in `test/runtests_versus_discrete_vi.jl`, a function approximation object that uses grid interpolation 
 (`LocalGIFunctionApproximator`) is created, after the appropriate `RectangleGrid` is 
-constructed (Look at [GridInterpolations.jl](https://github.com/sisl/GridInterpolations.jl/blob/master/src/GridInterpolations.jl/) for more details about this).
+constructed (Look at [GridInterpolations.jl](https://github.com/sisl/GridInterpolations.jl/) for more details about this).
 
 ```julia
 using POMDPs, POMDPModels
@@ -78,21 +59,25 @@ using LocalFunctionApproximation
 using LocalApproximationValueIteration
 
 VERTICES_PER_AXIS = 10 # Controls the resolutions along the grid axis
-grid = RectangleGrid(range(1, stop=100, length=VERTICES_PER_AXIS), range(1, stop=100, length=VERTICES_PER_AXIS), [0.0, 1.0]) # Create the interpolating grid
-interp = LocalGIFunctionApproximator(grid)  # Create the local function approximator using the grid
-
-@requirements_info LocalApproximationValueIterationSolver(interp) GridWorld() # Check if the solver requirements are met
+grid = RectangleGrid(
+    range(1, 100, length=VERTICES_PER_AXIS), # x
+    range(1, 100, length=VERTICES_PER_AXIS)  # y
+)
+interp = LocalGIFunctionApproximator(grid)
 ```
 
 The user should modify the above steps depending on the kind of interpolation and the necessary parameters they want. We have delegated this step to the user
 as it is extremely problem and domain specific. Note that the solver supports both explicit and generative transition models for the MDP (more on that [here](http://juliapomdp.github.io/POMDPs.jl/latest/def_pomdp)).
-The `.is_mdp_generative` and `.n_generative_samples` arguments of the `LocalApproximationValueIteration` solver should be set accordingly, and there are different
+The `is_mdp_generative` and `n_generative_samples` arguments of the `LocalApproximationValueIteration` solver should be set accordingly, and there are different
 `@requirements` depending on which kind of model the MDP has.
 
 Once all the necessary functions have been defined, the solver can be created.  A `GridWorld` MDP is defined with grid size 100 x 100 and appropriate reward states:
 
 ```julia
-mdp = GridWorld(sx=100, sy=100, rs=rstates, rv=rvect)
+mdp = SimpleGridWorld(
+    size = (100,100),
+    rewards = Dict(GWPos(x,y)=>10. for x ∈ 40:60, y ∈ 40:60)
+)
 ```
 
 Finally, the solver can be created using the function approximation object and other necessary parameters
