@@ -29,7 +29,7 @@ end
 # NOTE : We work directly with the value function
 # And extract actions at the end by using the interpolation object
 mutable struct LocalApproximationValueIterationPolicy{I<:LocalFunctionApproximator, RNG<:AbstractRNG} <: Policy
-    interp::I # General approximator to be used in VI 
+    interp::I # General approximator to be used in VI
     action_map::Vector # Maps the action index to the concrete action type
     mdp::Union{MDP,POMDP} # Uses the model for indexing in the action function
     is_mdp_generative::Bool # (Copied from solver.is_mdp_generative)
@@ -38,7 +38,7 @@ mutable struct LocalApproximationValueIterationPolicy{I<:LocalFunctionApproximat
 end
 
 # The policy can be created using the MDP and solver information
-# The policy's function approximation object (interp) is obtained by deep-copying over the 
+# The policy's function approximation object (interp) is obtained by deep-copying over the
 # solver's interp object. The other policy parameters are also obtained from the solver
 function LocalApproximationValueIterationPolicy(mdp::Union{MDP,POMDP},
                                                 solver::LocalApproximationValueIterationSolver)
@@ -47,8 +47,8 @@ function LocalApproximationValueIterationPolicy(mdp::Union{MDP,POMDP},
 end
 
 
-@POMDP_require solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,POMDP}) begin
-    
+POMDPLinter.@POMDP_require solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,POMDP}) begin
+
     P = typeof(mdp)
     S = statetype(P)
     A = actiontype(P)
@@ -75,13 +75,13 @@ end
         D = typeof(dist)
         @req support(::D)
     end
-    
+
 end
 
 
 function POMDPs.solve(solver::LocalApproximationValueIterationSolver, mdp::Union{MDP,POMDP})
 
-    @warn_requirements solve(solver, mdp)
+    POMDPLinter.@warn_requirements solve(solver, mdp)
 
     # Ensure that generative model has a non-zero number of samples
     if solver.is_mdp_generative
@@ -114,7 +114,7 @@ function POMDPs.solve(solver::LocalApproximationValueIterationSolver, mdp::Union
     for (i, pt) in enumerate(interp_points)
         interp_states[i] = POMDPs.convert_s(S, pt, mdp)
     end
-    
+
     # Outer loop for Value Iteration
     for i = 1 : max_iterations
         residual::Float64 = 0.0
@@ -162,7 +162,7 @@ function POMDPs.solve(solver::LocalApproximationValueIterationSolver, mdp::Union
                             end
                         end # next-states
                     end
-                    
+
                     max_util = (u > max_util) ? u : max_util
                 end #action
 
@@ -194,7 +194,7 @@ end
 
 # Not explicitly stored in policy - extract from value function interpolation
 function POMDPs.action(policy::LocalApproximationValueIterationPolicy, s::S) where S
-    
+
     mdp = policy.mdp
     best_a_idx = -1
     max_util = -Inf
@@ -203,7 +203,7 @@ function POMDPs.action(policy::LocalApproximationValueIterationPolicy, s::S) whe
 
 
     for a in sub_aspace
-        
+
         iaction = actionindex(mdp, a)
         u::Float64 = value(policy, s, a)
 
@@ -225,7 +225,7 @@ function POMDPs.value(policy::LocalApproximationValueIterationPolicy, s::S, a::A
 
     u::Float64 = 0.0
 
-    # As in solve(), do different things based on whether 
+    # As in solve(), do different things based on whether
     # mdp is generative or explicit
     if policy.is_mdp_generative
         for j in 1:policy.n_generative_samples
