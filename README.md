@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/JuliaPOMDP/LocalApproximationValueIteration.jl.svg?branch=master)](https://travis-ci.org/JuliaPOMDP/LocalApproximationValueIteration.jl)
+[![CI](https://github.com/JuliaPOMDP/LocalApproximationValueIteration.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/JuliaPOMDP/LocalApproximationValueIteration.jl/actions/workflows/CI.yml)
 [![codecov](https://codecov.io/github/JuliaPOMDP/LocalApproximationValueIteration.jl/branch/master/graph/badge.svg?token=he21c4XyeP)](https://codecov.io/github/JuliaPOMDP/LocalApproximationValueIteration.jl)
 
 # LocalApproximationValueIteration
